@@ -13,7 +13,7 @@ This is a preservation project. The original game went offline; this brings it b
 1. **Docker Desktop** for Windows — [download here](https://www.docker.com/products/docker-desktop/). Install, launch it once, wait for it to finish starting.
 
 2. **The Docker images tarball** — `BACKUP_docker_images.tar` (~270MB). Too large for GitHub, so it lives at:
-   - **[Download link goes here]**
+   - **[https://drive.google.com/file/d/1IwYE4lFkJpo3u1hF92cVEbQlVuef-_Mp/view?usp=sharing]**
 
    Save it to the same folder as `install.bat` (i.e. inside the extracted project root).
 
