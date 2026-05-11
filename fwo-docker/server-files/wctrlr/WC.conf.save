@@ -1,0 +1,27 @@
+;
+; Sample Config file for World Controller
+;
+PortNumber 8888
+DBAuthName fwsubdevdb
+DBAuthHos
+DBName fwworlddevdb
+DBHost localhost
+DBUser root
+DBPassword ejair0xx
+ScriptLog log.txt
+ProcType daemon
+;ProcType console
+LogType syslog
+;LogType screen
+NumThreads 10
+WSTicket system
+ServerID 7
+NumConns 3500
+WorldAddr 202.75.60.51
+GMCharID 1073892516
+;BillingServer 192.168.0.223
+BillingPort 5960
+CheckLogin 0
+CheckLogout 0 
+CheckDeduct 0
+LoggingServerIP 202.75.60.51

@@ -1,0 +1,2 @@
+#!/bin/sh
+/root/ensure_zs_alive.sh

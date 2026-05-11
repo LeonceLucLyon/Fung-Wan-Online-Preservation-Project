@@ -1,0 +1,84 @@
+# =============================================================================
+# FWO Offline Preservation - Docker Compose
+# =============================================================================
+# Builds fwo-db from a custom Dockerfile that inherits from
+# vettadock/mysql-old:4.1 and bakes in skip-symbolic-links, old-passwords,
+# and the /var/lib/mysql -> /usr/local/mysql/data symlink.
+#
+# The image: directives below let docker-compose use pre-built images
+# (loaded from BACKUP_docker_images.tar) without rebuilding. If the images
+# don't exist locally, compose falls back to building from the Dockerfiles.
+#
+# Usage:
+#   First-time install:  install.bat       (full automated install)
+#   Normal use:          docker-compose up -d
+#   Stop:                docker-compose down
+#   Full reset:          docker-compose down -v   (WARNING: wipes database)
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # fwo-db: MySQL 4.1.22 (custom build with FWO config baked in)
+  # ---------------------------------------------------------------------------
+  fwo-db:
+    build:
+      context: ./fwo-db
+      dockerfile: Dockerfile
+    image: fwo-docker-fwo-db:latest
+    container_name: fwo-db
+    restart: unless-stopped
+    volumes:
+      - fwo-db-data:/usr/local/mysql/data
+      - ./database:/database:ro
+    networks:
+      fwo-net:
+        aliases:
+          - fwo-db
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pejair0xx"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # fwo-server: Game server (authsys + wctrlr + zoneserver + logserver)
+  # ---------------------------------------------------------------------------
+  fwo-server:
+    build:
+      context: .
+      dockerfile: fwo-server/Dockerfile
+    image: fwo-docker-fwo-server:latest
+    container_name: fwo-server
+    restart: unless-stopped
+    depends_on:
+      fwo-db:
+        condition: service_healthy
+    ports:
+      - "7778:7778"
+      - "8888:8888"
+      - "9999:9999/udp"
+      - "9998:9998/udp"
+      - "40000-40010:40000-40010/udp"
+    volumes:
+      - ./server-files/authsys:/FWO13/authsys
+      - ./server-files/wctrlr:/FWO13/wctrlr
+      - ./server-files/zoneserver:/FWO13/zoneserver
+      - ./server-files/logging:/FWO13/logging
+      - ./server-files/script:/FWO13/script
+      - ./server-files/web/dragon:/var/www/html/dragon
+      - ./database:/FWO13/database:ro
+      - fwo-logs:/var/log
+    networks:
+      - fwo-net
+
+volumes:
+  fwo-db-data:
+    driver: local
+  fwo-logs:
+    driver: local
+
+networks:
+  fwo-net:
+    driver: bridge

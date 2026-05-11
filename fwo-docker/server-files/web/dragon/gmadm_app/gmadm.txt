@@ -1,0 +1,26 @@
+
+192.168.0.69:/home/vpopmail/domains/fungwanonline.com/.qmail-bugs
+
+it makes email server to call /home/vpopmail/bin/mail_to_bug.pl to process email for bugs@fungwanonline.com
+
+192.168.0.22:\\server2\web\pmail_to_bug.pl eden
+192.168.0.22:\\server2\web\mail_to_bug.pl pgs
+
+
+NAT apache settings
+/etc/httpd/conf/httpd.conf 
+bugzilla home directory "/var/www/bug"
+restart web server /etc/init.d/httpd restart
+
+
+
+gmadm batches
+
+record_fwo_ac_login.sh - run by cron on wctrl appl
+
+wclog_to_db.pl - on wc. called by record_fwo..
+set_logout_time.pl - on zs. called by record_fwo.. remotely.
+ensure_zs_alive.sh - on zs. run by cron  and call check_zs.pl to record zoneserver crash time
+
+check_zs.pl - on zs. (has config) to log zoneserver crash time in a file.
+

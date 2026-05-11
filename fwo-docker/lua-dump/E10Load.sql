@@ -1,0 +1,1 @@
+update uniqueitem set CharID=80562 where CharID=0 and ItemID>=6684674 and ItemID<=6684693;

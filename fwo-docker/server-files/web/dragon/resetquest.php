@@ -1,0 +1,206 @@
+<?php
+require("auth.php");
+
+require_once('dbGmAdm.php');
+mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+$wid=$HTTP_POST_VARS[wid];
+if($HTTP_GET_VARS[wid])$wid=$HTTP_GET_VARS[wid];
+if($wid=="")
+{
+	$wid=$HTTP_SESSION_VARS['wid'];
+}
+else
+{
+	$HTTP_SESSION_VARS['wid']=$wid;
+}
+
+if(!has_perm($HTTP_SESSION_VARS['userid'], $wid, "gmchar", ""))
+{
+	$HTTP_SESSION_VARS['wid'] = '';
+	die("Access denied.");
+}
+elseif(($HTTP_GET_VARS[a]=="a" || $HTTP_GET_VARS[a]=="d" || $HTTP_GET_VARS[a]=="s") && !has_perm($HTTP_SESSION_VARS['userid'], $wid, "gmchar", "w"))
+{
+	die("Access denied. Read-Only.");
+}
+
+
+$query_rsWc = "SELECT * FROM gm_server WHERE type='wc';";
+$rsWc = mysql_query($query_rsWc, $dbGmAdm) or die(mysql_error());
+$htmlWc="<select name=wid onChange=\"postform(document.form1,'resetquest.php?a=wc')\"><option value=''></option>";
+//while($row=mysql_fetch_assoc($rsWc))
+$arWc = get_accessible_server($HTTP_SESSION_VARS['userid'], 'wc');
+foreach($arWc as $row)
+{
+	$selected=($wid==$row[id])?"SELECTED":"";
+	$htmlWc.="<option value='{$row[id]}' $selected>{$row[name]}</option>";
+}
+$htmlWc.="</select>";
+mysql_free_result($rsWc);
+
+
+if($wid)
+{
+	$pos=0+$HTTP_POST_VARS[questno];
+	$new_quest_val=0+$HTTP_POST_VARS[questval];
+	$new_quest_byte=chr($new_quest_val);
+	$criteria_op = $HTTP_POST_VARS[criteria];
+	if(strlen($criteria_op) > 2) die("Invalid logical operator.");
+
+	if($HTTP_SERVER_VARS[REQUEST_METHOD]=="POST" && $HTTP_GET_VARS['a']!="wc")
+	{
+		if($pos<1 || $pos>500)die("Invalid quest no. <p><a href='resetquest.php'>Back</a>");
+		if($new_quest_val<0 || $new_quest_val>255)die("invalid quest state");
+
+		$rsSvr = mysql_query("SELECT * FROM gm_server WHERE id='{$wid}'", $dbGmAdm) or die(mysql_error());
+		$row_rsSvr=mysql_fetch_assoc($rsSvr) or die("Invalid WorldController");
+		mysql_free_result($rsSvr);
+		$wc_ip = $row_rsSvr[ip];
+		$wc_db = $row_rsSvr[db];
+		$dbWc = mysql_connect($wc_ip,$row_rsSvr[dbuser],$row_rsSvr[dbpasswd]) or die(mysql_error());
+		mysql_select_db($wc_db, $dbWc);
+
+		$query_rs = "SELECT CharID, Username, CharacterName, QuestData FROM pcharacter";
+
+		if($HTTP_GET_VARS[a]=="s") $query_rs = "SELECT CharID, QuestData FROM pcharacter";
+
+		$rs1 = mysql_query($query_rs, $dbWc) or die(mysql_error($dbWc));
+
+		while($prow=mysql_fetch_assoc($rs1))
+		{
+			set_time_limit(10);
+			$charid=$prow[CharID];
+
+			//$query_rs = "SELECT * FROM pcharacter WHERE CharID='{$charid}'";
+			//$rs = mysql_query($query_rs, $dbWc) or die(mysql_error($dbWc));
+			//$row=mysql_fetch_assoc($rs);
+			//mysql_free_result($rs);
+
+			$data = $prow[QuestData];
+			$len=strlen($data);
+
+			if($pos > $len)
+			{
+				$data .= str_repeat("\0", $pos - $len);
+				$len = $pos;
+			}
+			//$blank = ($pos > $len)?	str_repeat("\0", $pos - $len) : "";
+			//$data .= $blank;
+			//$len=strlen($data);
+
+			$cur_quest_val = ord(substr($data,$pos-1,1));
+
+			if($HTTP_GET_VARS[a]=="s")
+			{
+				if($cur_quest_val != $new_quest_val)
+				{
+					$head=($pos > 1)? substr($data,0,$pos-1):"";
+					$tail=($len > $pos)? substr($data,$pos):"";
+					$data = $head . $new_quest_byte . $tail;
+					$data_in_hex="0x";
+					for($n=0;$n<$len;$n++)
+					{
+						$data_in_hex.=str_pad(dechex(ord($data[$n])),2,'0',STR_PAD_LEFT);
+					}
+
+					$query_rs = "UPDATE pcharacter SET QuestData={$data_in_hex} WHERE CharID='{$charid}'";
+					$befores = dump_rs_string(array($prow));
+					//$updateds .="<li>$row[CharacterName]";
+					mysql_query($query_rs, $dbWc) or die(mysql_error($dbWc));
+					$after = get_str_rs($dbWc, "SELECT * FROM pcharacter WHERE CharID='{$charid}';");
+					
+				}
+			}
+			elseif($HTTP_GET_VARS[a]=="f")
+			{
+				eval("\$matched = (\$cur_quest_val $criteria_op \$new_quest_val);");
+				if($matched)
+				{
+					$rows_matched[]=array($prow[Username],$prow[CharID],U16btoU8str($prow[CharacterName]), $cur_quest_val);
+				}
+			}
+
+		}
+
+	//	echo generate_form('form1',$HTTP_POST_VARS);
+	//	post_form('document.form1',"resetquest.php?i={$HTTP_GET_VARS[i]}");
+	//	//header("Location: resetquest.php?i={$HTTP_GET_VARS[i]}");
+	//	exit();
+
+		mysql_free_result($rs1);
+	}
+}
+?>
+<html>
+<head>
+<title><?=BROWSER_TITLE?></title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="ga.css" rel="stylesheet" type="text/css"/>
+<script language="JavaScript" type="text/JavaScript">
+<!--
+function postform(form,url){
+	form.action=url;form.submit()
+}
+//-->
+</script>
+</head>
+<body>
+<form name="form1" method="POST">
+<h3>Quest Reset</h3>
+(World Controller: <?=$htmlWc?>)
+<br><br>
+<?
+if($wid)
+{
+?>
+		<table width=600>
+			<tr valign=top>
+				<td width=60%>
+					<table border="1" cellspacing=0>
+						<tr>
+							<td>Quest No</td>
+							<td><input name="questno" type="text" value="<?=$pos?>"> </td>
+						</tr>
+						<tr>
+							<td>Quest State</td>
+							<td><input name="questval" type="text" value="<?=$new_quest_val?>"></td>
+						</tr>
+					</table>
+					<!--input type="reset" name="Reset" value="Reset"-->
+					<select name="criteria">
+						<option value="==" <?=$criteria_op=="=="?"SELECTED":""?>>match</option>
+						<option value="!=" <?=$criteria_op=="!="?"SELECTED":""?>>does not match</option>
+						<option value="<" <?=$criteria_op=="<"?"SELECTED":""?>>less than</option>
+						<option value=">" <?=$criteria_op==">"?"SELECTED":""?>>greater than</option>
+					</select>
+					<input type="button" name="Button" value="Search" onClick="postform(document.form1,'resetquest.php?a=f')">
+					<br><font color=red><b>Warning: Only one quest reset process is allowed at any one time. Please do not reset (same or different) quest in different tabs, browsers or on different PCs at the same time.</b></font>
+					<br><input type="button" name="Button" value="Save" onClick="if(confirm('It will take a while to update, advisable to have all players logout!\nOverwrite?'))postform(document.form1,'resetquest.php?a=s')">
+				</td>
+				<td awidth=50% align=center>
+					<?=$quest_state_ref?>
+				</td>
+			</tr>
+		</table>
+	</form>
+<?
+	if(is_array($rows_matched))
+	{
+		$count = 0;
+		echo "<table border=1 cellspacing=0><tr><th>#</th><th>Character</td><th>Account</td><th>Quest State</td>";
+		foreach ($rows_matched as $row)
+		{
+			$count++;
+			echo "<tr><td>$count</td><td><a href='questdata.php?i=$row[1]&wid=$wid'>$row[2]</a></td><td>$row[0]</td><td>$row[3]</td></tr>";
+		}
+		echo "</table>";
+	}
+	elseif($HTTP_GET_VARS[a]=='f')
+	{
+		echo "<font color=red><b>No matched queries.</b></font>";
+	}
+}
+?>
+</body>
+</html>

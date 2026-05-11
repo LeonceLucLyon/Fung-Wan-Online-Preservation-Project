@@ -1,0 +1,762 @@
+<?php
+require("auth.php");
+
+require_once('dbGmAdm.php');
+mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+$wid=$HTTP_POST_VARS[wid];
+$zid=$HTTP_POST_VARS[zid];
+$lid=$HTTP_POST_VARS[lid];
+$page = $HTTP_GET_VARS[p];
+$rowpp = $HTTP_POST_VARS[rowpp];
+$rowpp = 50;
+
+if(!$page) $page=1;
+$filter=$HTTP_POST_VARS[filter];
+
+$filter = "1";
+
+$js_init = '';
+$cond_count = $HTTP_POST_VARS[cond_count];
+$criteria = array();
+for($n = 0; $n <= $cond_count; $n++)
+{
+	$field = trim($HTTP_POST_VARS['field_' . $n]);
+	$cmp1 = trim($HTTP_POST_VARS['cmp_' . $n]);
+	$val1 = trim($HTTP_POST_VARS['val1_' . $n]);
+	$val2 = trim($HTTP_POST_VARS['val2_' . $n]);
+	$val3 = trim($HTTP_POST_VARS['val3_' . $n]);
+	$val4 = trim($HTTP_POST_VARS['val4_' . $n]);
+
+	if(strlen($field) == 0 || strlen($val1) == 0 ) continue;
+	if($cmp1 == '>=' && strlen($val2) == 0) continue;
+
+	$js_init .= "addcond('$field', '$cmp1', '$val1', '$val2', '$val3', '$val4');";
+
+	if($field == 'DATE')
+	{
+		list($d, $m, $y) = split("\/", $val1);
+		list($h, $i, $s) = split(":", $val3);
+		$val1 = mktime($h, $i, $s, $m, $d, $y);
+		list($d, $m, $y) = split("\/", $val2);
+		list($h, $i, $s) = split(":", $val4);
+		$val2 = mktime($h, $i, $s, $m, $d, $y);
+
+	}
+	$cond = "{$field}{$cmp1}{$val1}";
+	if($cmp1 == '>=') $cond .= " && {$field}<={$val2}";
+
+	$criteria[$field] = $cond;
+/*
+	if($field == 'CHAR')
+	{
+		$cond2 = str_replace('CHAR', 'SUBJ', $cond);
+		$cond = "(($cond) || ($cond2))";
+	}
+
+	$filter .= " && $cond";
+*/
+}
+
+if($HTTP_GET_VARS[wid])$wid=$HTTP_GET_VARS[wid];
+{
+	if($wid=="")
+	{
+		$wid=$HTTP_SESSION_VARS['wid'];
+	}
+	else
+	{
+		$HTTP_SESSION_VARS['wid']=$wid;
+	}
+}
+
+if(!has_perm($HTTP_SESSION_VARS['userid'], $wid, "conf", ""))
+{
+	die("Access denied.");
+}
+elseif(($HTTP_GET_VARS[a]=="a" || $HTTP_GET_VARS[a]=="d" || $HTTP_GET_VARS[a]=="s" || $HTTP_GET_VARS[a]=="start" || $HTTP_GET_VARS[a]=="stop" || $HTTP_GET_VARS[a]=="log") && !has_perm($HTTP_SESSION_VARS['userid'], $wid, "gmdata", "w"))
+{
+	die("Access denied. Read-Only.");
+}
+
+$rsSvr = mysql_query("SELECT * FROM gm_server WHERE id='{$wid}'", $dbGmAdm) or die(mysql_error());
+if(mysql_num_rows($rsSvr) > 0)
+{
+	$row_rsSvr=mysql_fetch_assoc($rsSvr) or die("Invalid WorldController");
+	mysql_free_result($rsSvr);
+
+	$dbWc = mysql_pconnect($row_rsSvr[ip],$row_rsSvr[dbuser],$row_rsSvr[dbpasswd]) or die(mysql_error());
+	mysql_select_db($row_rsSvr[db], $dbWc);
+
+	$rsZs = mysql_query("SELECT DISTINCT Address FROM scene WHERE Address IS NOT NULL ORDER BY Address", $dbWc) or die(mysql_error());
+}
+
+$arWc = get_accessible_server($HTTP_SESSION_VARS['userid'], 'wc');
+$htmlWc = "<select name=wid onchange=\"postform(document.form1,'gmzslogcf.php')\"><option value=''></option>";
+foreach($arWc as $row)
+{
+	$selected=($wid==$row[id])?"SELECTED":"";
+	$htmlWc.="<option value='{$row[id]}' $selected>{$row[name]}</option>";
+}
+$htmlWc.="</select>";
+
+
+function readlog($server, $log_file, $filter, &$results, $offset=0, $limit=0)
+{
+	global $rsa_file, $criteria, $remote_username;
+	$line_no = 0;
+	$row_no = 0;
+
+	$fp1 = popen("ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@{$server} cat {$log_file}", "r");
+	while(!feof($fp1))
+	{
+/*		$rec = array(
+			"DATE"=>"''",
+			"SUBJ"=>"''",
+			"ACTION"=>"''",
+			"CHAR"=>"''",
+			"CLAN"=>"''",
+			"EFFECT"=>"''",
+			"FLAG"=>"''",
+			"GOLD"=>"''",
+			"ITEM"=>"''",
+			"LEVEL"=>"''",
+			"PARAM"=>"''",
+			"POS"=>"''",
+			"POWER"=>"''",
+			"QTTY"=>"''",
+			"RANK"=>"''",
+			"SCENE"=>"''",
+			"SKILL"=>"''",
+			"SLOT"=>"''",
+			"STANCE"=>"''",
+			"TIME"=>"''",
+			"TYPE"=>"''",
+			"VAL"=>"''",
+			"VALTYPE"=>"''",
+			"XP"=>"''"
+		);
+*/
+		$rec = array();
+
+		$line = fgets($fp1, 1024);
+		$line_no++;
+		if($offset && $line_no < $offset) continue;
+
+		list($line, $desc) = split(" :: ", $line);
+		$data = split(" : ", $line);
+		$n = count($data);
+
+		$rec["DATE"] = $data[3];
+		$rec["CHAR_Z"] = $data[2]; //SUBJ
+		$rec["ACTION"] = $data[4];
+		$rec["DESC"] = $desc;
+
+		for($i = 5; $i < $n; $i++)
+		{
+			list($dkey, $dval) = split("=", $data[$i]);
+			$rec[$dkey] = $dval;
+		}
+		$matched  = 1;
+
+		reset($criteria);
+
+		while(list($key, $val) = each($criteria))
+		{
+			reset($rec);
+			while(list($key1, $val1) = each($rec))
+			{
+				$matched = 0;
+				if(ereg("^$key(_\S*)?", $key1))
+				{
+					if(is_numeric($val1))
+					{
+						$curcond = $val;
+						$curcond = str_replace($key, $val1, $curcond);
+						eval("\$matched = $curcond;");
+						if($matched) break 1;
+					}
+					else
+					{
+						$matched = 0;
+					}
+				}
+			}
+			if(!$matched) break;
+		}
+/*
+		if(strlen($filter) > 0)
+		{
+			$condition = $filter;
+			while(list($key, $val) = each($rec))
+			{
+				if(is_numeric($val))
+//					$condition = preg_replace("/$key(\_\S*)?/", $val, $condition);
+					$condition = str_replace($key, $val, $condition);
+			}
+			eval("\$matched = $condition;");
+		}
+		else
+		{
+			$matched = 1;
+		}
+*/
+
+		if($matched)
+		{
+			$results[] = $rec;
+			$row_no++;
+			if($limit && $row_no == $limit) break;
+		}
+	}
+	pclose($fp1);
+	return $row_no;
+}
+
+
+$results = array();
+$results_count = 0;
+
+$arZs[] = "(ALL)";
+if(is_resource($rsZs))
+{
+	while($row = mysql_fetch_assoc($rsZs))
+	{
+		$arZs[] = $row[Address];
+	}
+}
+
+$htmlZs = "<select name=zid onchange=\"postform(document.form1,'gmzslogcf.php')\"><option value=''></option>";
+foreach($arZs as $zs_ip)
+{
+	if($zid==$zs_ip)
+	{
+		$selected = "SELECTED";
+		$selected_zs = $zs_ip;
+	}
+	else
+	{
+		$selected = "";
+	}
+	$htmlZs .= "<option value=\"{$zs_ip}\" {$selected}>{$zs_ip}</option>";
+}
+$htmlZs .= "</select>";
+
+function getlogfiles($address, &$logfiles)
+{
+	global $rsa_file, $zsconf_location, $remote_username;
+	$fp = popen ("ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@{$address} cat $zsconf_location", "r");
+	while(!feof($fp))
+	{
+		if($log = fscanf($fp, "Log%d\t%s\n"))
+		{
+			list($log_id, $log_file) = $log;
+			if($log_id) $logfiles[$log_id] = $log_file;
+		}
+	}
+	pclose($fp);
+}
+
+function cmpByDT($a, $b)
+{
+	return $a[DATE] > $b[DATE];
+}
+
+$htmlLog = "<select name=lid><option value=''></option>";
+$logfiles[0] = "ALL";
+if($selected_zs) getlogfiles($selected_zs, $logfiles);
+while(list($log_id, $log_file) = each($logfiles))
+{
+	if($log_id == $lid)
+	{
+		$selected = "SELECTED";
+		$selected_log = "$log_file";
+	}
+	else
+	{
+		$selected = "";
+	}
+	$htmlLog .= "<option value='{$log_id}' {$selected}>{$zslogGID[$log_id]} ({$log_file})</option>";
+}
+$htmlLog .= "</select>";
+
+if($HTTP_GET_VARS[a] == 'f')
+{
+	if($selected_zs == '(ALL)')
+	{
+		foreach($arZs as $zs_ip)
+		{
+			$logs = array();
+			getlogfiles($zs_ip, $logs);
+			$logs = array_unique($logs);
+			while(list($log_id, $log_file) = each($logs))
+			{
+				$results_count += readlog($zs_ip, $log_file, $filter, $results);
+			}
+
+		}
+	}
+	elseif($selected_zs && $HTTP_GET_VARS[a]=='f')
+	{
+		if($selected_log=='ALL')
+		{
+			$logs = array();
+			getlogfiles($selected_zs, $logs);
+			$logs = array_unique($logs);
+			while(list($log_id, $log_file) = each($logs))
+			{
+				$results_count += readlog($selected_zs, $log_file, $filter, $results);
+			}
+		}
+		elseif($selected_log)
+		{
+			$results_count = readlog($selected_zs, $selected_log, $filter, $results);
+		}
+
+	}
+
+	if($results_count > 0)
+	{
+		usort($results, "cmpByDT");
+		$lastpage = ceil($results_count / $rowpp);
+		if($page > $lastpage) $page = $lastpage;
+		$results = array_splice($results, ($page - 1) * $rowpp, $rowpp);
+
+		$idx = ($page - 1) * $rowpp;
+
+		$html_results = "<table border=1><tr><th>#</th><th>DATE</th><th>CHAR</th><th>ACTION</th><th>Action Description</th><th>Action Parameter(s)</th></tr>";
+		foreach($results as $rec)
+		{
+			$details = "";
+			while (list($key, $val) = each($rec))
+			{
+				if($val=="''") continue;
+				if(ereg("^CHAR_Z$", $key))
+				{
+					if(substr(dechex($val), 0, 1) == "4")
+					{
+						$char_link = "<a href=\"pcharstat.php?wid={$wid}&i={$val}\" target=\"_blank\">{$val}</a>";
+					}
+					else
+					{
+						$char_link = "$val";
+					}
+					continue;
+				}
+				elseif(ereg("^DATE$", $key))
+				{
+					$dt = date('Y/m/d H:i:s', $val);
+					continue;
+				}
+				elseif(ereg("^ACTION$", $key))
+				{
+					$aid = $val;
+					continue;
+				}
+				elseif(ereg("^DESC$", $key))
+				{
+					$desc = $val;
+					continue;
+				}
+				elseif(ereg("^CHAR(\_\S*)?", $key))
+				{
+					if(substr(dechex($val), 0, 1) == "4")
+						$val = "<a href=\"pcharstat.php?wid={$wid}&i=$val\" target=\"_blank\">$val</a>";
+				}
+				elseif(ereg("^ITEM(\_\S*)?", $key))
+				{
+					$unique_item = ($val >> 16 == 21 || $val >> 16 >= 100);	//21 is relic; >=100 is unique item
+					$id = $val;
+					$val = U16btoU8str(getstring($val, 'item')) . " ($val)";
+					if($unique_item) $val = "<a href=\"uitem.php?wid={$wid}&i={$id}\" target=\"_blank\">$val</a>";
+				}
+				elseif(ereg("^STANCE(\_\S*)?", $key))
+				{
+					$val = U16btoU8str(getstring($val, 'stance')) . " ($val)";
+				}
+				elseif(ereg("^EFFECT(\_\S)?", $key))
+				{
+					$val = U16btoU8str(getstring($val, 'effect')) . " ($val)";
+				}
+				elseif(ereg("^POWER(\_\S)?", $key))
+				{
+					$val = U16btoU8str(getstring($val, 'power')) . " ($val)";
+				}
+				elseif(ereg("^SKILL(\_\S)?", $key))
+				{
+					$val = U16btoU8str(getstring($val, 'skill')) . " ($val)";
+				}
+				elseif(ereg("^CLAN(\_\S)?", $key))
+				{
+					$val = $clan_name[$val] . " ($val)";
+				}
+				elseif(ereg("^SCENE(\_\S)?", $key))
+				{
+					$val = $scene_name[$val] . " ($val)";
+				}
+				elseif(ereg("^SLOT(\_\S)?", $key))
+				{
+					if($val = 1){
+						$slot_desc = "Mouse cursor slot";
+					}elseif($val >= 2 && $val <= 17){
+						$slot_desc = "Inventory slots";
+					}elseif($val == 18){
+						$slot_desc = "Armour slot";
+					}elseif($val == 19){
+						$slot_desc = "Neck/amulet slot";
+					}elseif($val == 20){
+						$slot_desc = "Arm/bracer slot";
+					}elseif($val == 21){
+						$slot_desc = "Feet/greaves slot";
+					}elseif($val >= 22 && $val <=23){
+						$slot_desc = "Ring slots";
+					}elseif($val == 24){
+						$slot_desc = "Shoulder slot";
+					}elseif($val == 25){
+						$slot_desc = "Face/mask slot";
+					}elseif($val >= 36 && $val <= 51){
+						$slot_desc = "Personal clan stash slots";
+					}elseif($val >= 52 && $val <= 57){
+						$slot_desc = "Action slots";
+					}elseif($val >= 80 && $val <= 95){
+						$slot_desc = "Temporary loot slots";
+					}elseif($val == 99){
+						$slot_desc = "Trash/delete slot*";
+					}elseif($val >= 150 && $val <= 165){
+						$slot_desc = "Relic slots*";
+					}elseif($val >= 166 && $val <= 171){
+						$slot_desc = "Target trading slots*";
+					}elseif($val >= 201 && $val <= 240){
+						$slot_desc = "General quick slots";
+					}
+					$val = $slot_desc . " ($val)";
+				}
+				if(ereg("^VARTYPE(\_\S)?", $key) || ereg("PARAM(\_\d)?", $key))
+				{
+					$details .= "<i>$key=$val</i><br>";
+				}
+				else
+				{
+					$details .= "$key=$val<br>";
+				}
+			}
+			$details = substr($details, 0, -4);
+			$idx++;
+			$html_results .= "<tr><td>{$idx}</td><td>{$dt}</td><td>{$char_link}</td><td>{$aid}</td><td>{$desc}</td><td>$details</td></tr>";
+		}
+		$html_results .= "</table>";
+	}
+	else
+	{
+		$html_results = "<font color=red>No matched queries.</font>";
+	}
+
+}
+?>
+<html>
+<head>
+<title><?=BROWSER_TITLE?></title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="ga.css" rel="stylesheet" type="text/css"/>
+<link rel="STYLESHEET" type="text/css" href="calendar.css">
+<script language="JavaScript" src="simplecalendar.js" type="text/javascript"></script>
+<script language="JavaScript" type="text/JavaScript">
+<!--
+function postform(form,url){
+	document.form1.cond_count.value = cond_indx
+	form.action=url;form.submit()
+}
+function saveid(i)
+{
+	if(eval("!document.form1.mark_"+i+".value"))
+	{
+		eval("document.form1.mark_"+i+".value=1")
+		document.form1.ids.value+=i+"|"
+	}
+}
+function doCheckAll(nm,v){
+	with (document.form1)
+		for (var i=0; i < elements.length; i++)
+			if (elements[i].type == 'checkbox' && elements[i].name == nm)elements[i].checked = v
+}
+
+function chkfrm(warn){
+	var ret = true
+	if(document.form1.wid.value.length==0){
+		alert("Please select world controller.")
+		return false
+	}
+	if(document.form1.zid.value.length==0){
+		alert("Please select zoneserver.")
+		return false
+	}
+	if(document.form1.lid.value.length==0){
+		alert("Please select log.")
+		return false
+	}
+
+	var o1, o2, o3, o4, o5, o6, errline, no
+	var errall = ""
+	var condcount = 0;
+	for(var n=0; n<=cond_indx; n++)
+	{
+		eval("o1 = document.all.field_" + n)
+		if(o1)
+		{
+			condcount++;
+			eval(" no = document.all.no_" + n + ".innerText")
+			eval("o2 = document.all.cmp_" + n)
+			eval("o3 = document.all.val1_" + n)
+			eval("o4 = document.all.val2_" + n)
+			eval("o5 = document.all.val3_" + n)
+			eval("o6 = document.all.val4_" + n)
+
+			errline = ""
+			if(o1.value == 'DATE')
+			{
+				if(!o3.value.match(/\d{1,2}\/\d{1,2}\/\d{4}/))
+				{
+					errline += '<li>Date must be in dd/mm/yyyy format.'
+					ret = false
+				}
+				if(!o5.value.match(/\d{1,2}\:\d{1,2}\:\d{1,2}/) && o5.value!='')
+				{
+					errline += '<li>Time must be in hh:mm:ss format.'
+					ret = false
+				}
+				if(o2.value == '>=')
+				{
+					if(!o4.value.match(/\d{1,2}\/\d{1,2}\/\d{4}/))
+					{
+						errline += '<li>Date range must be in dd/mm/yyyy format.'
+						ret = false
+					}
+					if(!o6.value.match(/\d{1,2}\:\d{1,2}\:\d{1,2}/) && o6.value!='')
+					{
+						errline += '<li>Time range must be in hh:mm:ss format.'
+						ret = false
+					}
+				}
+			}
+			else
+			{
+				if(o1.value == '')
+				{
+					errline += '<li>Please select a type.'
+					ret = false
+				}
+				if(isNaN(o3.value) || o3.value=='')
+				{
+					errline += '<li>Value must be numeric data.'
+					ret = false
+				}
+				if(o2.value == '>=' && (isNaN(o4.value) || o4.value==''))
+				{
+					errline += '<li>Value range must be numeric data. '
+					ret = false
+				}
+			}
+
+			if(errline.length)
+			{
+				errall += "Criteria " + no + ":<ul style='margin-top: 0px;margin-bottom:0'>" + errline + "</ul>"
+			}
+		}
+	}
+	if(condcount==0 && warn)
+	{
+		alert("Please enter at least 1 criteria for your search.")
+		ret = false
+	}
+	if(errall.length)
+	{
+		document.all.error.innerHTML = "<b>Error(s)</b><br>" + errall
+		document.all.error.style.display = ""
+		if(warn)alert("You have errors in search criteria(s).")
+	}
+	else
+	{
+		document.all.error.style.display = "none"
+	}
+
+	return ret
+}
+var cond_indx = 0
+var flds = new String(" DATE, ACTION, CHAR, CLAN, EFFECT, FLAG, GOLD, ITEM, LOC, PARAM, POS, POWER, QTTY, RANK, SCENE, SKILL, SLOT, STANCE, TIME, TYPE, VAL, VARTYPE, XP,");
+function rebuildchkbox(o, vals){
+	var def = o.value
+	vals = vals.concat(" " + o.value + ",")
+	vals = vals.substr(1, vals.length - 2);
+
+	var ar = vals.split(", ")
+	ar = ar.sort()
+
+	while(o.options.length) o.options.remove(0)
+
+	var opt
+	for(var n=0; n<ar.length; n++)
+	{
+		opt = document.createElement("OPTION")
+		opt.value = opt.text = ar[n]
+		o.add(opt)
+	}
+	o.value = def
+}
+function updateflds(){
+	var aflds = flds
+	var i = 0
+	var o
+	for(var n=0; n<=cond_indx; n++)
+	{
+		eval("o = document.all.field_" + n)
+		if(o)
+		{
+			eval("aflds = aflds.replace(/ " + o.value + ",/, '')")
+			eval("o = document.all.no_" + n)
+			o.innerHTML = ++i
+		}
+	}
+	for(var n=1; n<=cond_indx; n++)
+	{
+		eval("o = document.all.field_" + n)
+		if(o)rebuildchkbox(o, aflds)
+	}
+}
+function addcond(fld, cmp, val1, val2, val3, val4)
+{
+	cond_indx++
+	var html
+	var row = document.all.ctbl.insertRow()
+	var col
+
+	var tmpl1 = ''
+		+ '<div id="no_{i}"></div>'
+	var tmpl2 = ''
+		+ '<select name=field_{i} onchange="updateflds();document.all.d3_{i}.style.display=document.all.d1_{i}.style.display=(this.value==\'DATE\')?\'\':\'none\'">'
+		+ '<option value="' + fld + '">' + fld + '</option>'
+		+ '</select>'
+	var tmpl3 = ''
+		+ '<select name="cmp_{i}" onchange="document.all.d2_{i}.style.display=(this.value==\'>=\')?\'\':\'none\' ">'
+		+ '<option value="=="' + (cmp=='=='?' SELECTED':'') + '>=</option>'
+		+ '<option value="!="' + (cmp=='!='?' SELECTED':'') + '><></option>'
+		+ '<option value=">"' + (cmp=='>'?' SELECTED':'') + '>></option>'
+		+ '<option value=">="' + (cmp=='>='?' SELECTED':'') + '>From</option>'
+		+ '<option value="<"' + (cmp=='<'?' SELECTED':'') + '><</option>'
+		+ '</select>'
+	var tmpl4 = ''
+		+ '<input type="text" name="val1_{i}" size="8" value="{val1}">'
+		+ '<span id="d1_{i}" id="d1_{i}"' + (fld=='DATE'?'':' style="display:none"') + '>'
+		+	'<a href="javascript: void(0);" onmouseover="if (timeoutId) clearTimeout(timeoutId);window.status=\'Show Calendar\';return true;" onmouseout="if (timeoutDelay) calendarTimeout();window.status=\'\';" onclick="g_Calendar.show(event,\'form1.val1_{i}\',false, \'dd/mm/yyyy\'); return false;"><img src="images/calendar.gif" name="imgCalendar" width="34" height="21" border="0" alt=""></a>'
+		+ 	' Time: <input type="text" name="val3_{i}" size="6" maxlength=8 value="{val3}">'
+		+ '</span>'
+	var tmpl5 = ''
+		+ '<span name="d2_{i}" id="d2_{i}"' + (cmp=='>='?'':' style="display:none"') + '>'
+		+ 	'To <input type="text" name="val2_{i}" size="8" value="{val2}">'
+		+	'<span id="d3_{i}" id="d3_{i}"' + (fld=='DATE'?'':' style="display:none"') + '>'
+		+		'<a href="javascript: void(0);" onmouseover="if (timeoutId) clearTimeout(timeoutId);window.status=\'Show Calendar\';return true;" onmouseout="if (timeoutDelay) calendarTimeout();window.status=\'\';" onclick="g_Calendar.show(event,\'form1.val2_{i}\',false, \'dd/mm/yyyy\'); return false;"><img src="images/calendar.gif" name="imgCalendar" width="34" height="21" border="0" alt=""></a>'
+		+ 		' Time: <input type="text" name="val4_{i}" size="6" maxlength=8 value="{val4}">'
+		+ 	'</span>'
+		+ '</span>&nbsp;'
+	var tmpl6 = ''
+		+ '<input type="button" value="Remove" onclick="document.all.ctbl.deleteRow(this.parentNode.parentNode.rowIndex);updateflds();chkfrm(0)">'
+
+	for(var n=1; n<=6; n++)
+	{
+		eval("html = tmpl" + n)
+		html = html.replace(/\{i}/g, cond_indx)
+		html = html.replace(/\{field}/, fld)
+		html = html.replace(/\{cmp}/, cmp)
+		html = html.replace(/\{val1}/, val1)
+		html = html.replace(/\{val2}/, val2)
+		html = html.replace(/\{val3}/, val3)
+		html = html.replace(/\{val4}/, val4)
+		col = row.insertCell()
+		col.align = "center"
+		col.innerHTML = html
+	}
+}
+
+function init(){
+	<?
+	if(strlen($js_init) == 0)
+		echo "addcond('', '', '', '', '', '');";
+	else
+		echo $js_init;
+	?>
+	updateflds()
+}
+//-->
+</script>
+</head>
+<body>
+<form name="form1" method="post" action="">
+<h3>Zone Server Log</h3>
+<br>
+<table border=1 cellspacing=0>
+	<tr>
+		<td>World Controller</td>
+		<td><?=$htmlWc?></td>
+	</tr>
+	<tr>
+		<td><nobr>Zone Server</nobr></td>
+		<td><?=$htmlZs?></td>
+	</tr>
+	<tr>
+		<td>Log</td>
+		<td><?=$htmlLog?></td>
+	</tr>
+	<tr>
+		<td>Criteria(s)</td>
+		<td>
+			<input type=hidden name="cond_count" value="0">
+
+			<table width=900 name="ctbl" id="ctbl" border=1>
+				<tr>
+					<th width=2>#</th><th width=12%>Field</th><th width=15%>Logical Operator</th><th width=30%>Value</th><th width=30%>Range</th><th width=10%>&nbsp;</th>
+				</tr>
+			</table>
+			<div align=right>
+			<input type="button" value="Add Criteria" onclick="addcond('', '', '', '', '', '');updateflds()">
+			</div>
+			<div style="display:none">
+				<textarea name="filter" atype="text" rows=4 cols=80 value="<?=htmlspecialchars($filter)?>" size=100><?=htmlspecialchars($filter)?></textarea>
+			</div>
+
+			<div id="error" style="color:red"></div>
+		</td>
+	</tr>
+</table>
+<input type="button" value="Search" onclick="if(chkfrm(1))postform(document.form1, 'gmzslogcf.php?a=f')">
+<p>
+<?=$html_results?>
+
+<?
+function mklink($n){
+	global $page;
+	$tag = $n == $page?"<b>$n</b>":"$n";
+	return "<a href=\"javascript:if(chkfrm(1))postform(document.form1, 'gmzslogcf.php?a=f&p={$n}')\">$tag</a>";
+}
+
+if($lastpage > 0)
+{
+	$s1 = -10;
+	$s2 = 10;
+
+	$html_page = "Page: ";
+
+	if($page + $s1 > 1) $html_page .= mklink(1) . "... ";
+	for($n = $s1; $n < $s2; $n++)
+	{
+		$pp = $page + $n;
+		if($pp > $lastpage) break;
+		if($pp > 0 )
+			$html_page .= mklink($pp) . " ";
+	}
+	if($page + $s2 < $lastpage) $html_page .= " ..." . mklink($lastpage);
+
+	echo $html_page;
+}
+?>
+</form>
+</body>
+</html>

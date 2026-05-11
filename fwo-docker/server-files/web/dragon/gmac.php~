@@ -1,0 +1,461 @@
+<?php
+require('auth.php');
+$rpp  = 20;
+$offset = 0;
+
+function encrypt_passwd($passwd)
+{
+	if(strlen($passwd) < 3) return 0;
+	$salt = substr($passwd, 0, 2);
+	$epasswd = crypt($passwd, $salt);
+	return $epasswd;
+}
+
+require_once('dbGmAdm.php');
+mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+$arWc = get_accessible_server($HTTP_SESSION_VARS['userid'], 'as');
+
+if(count($arWc) == 0) die("Access denied.");
+
+if(!has_perm($HTTP_SESSION_VARS['userid'], $HTTP_SESSION_VARS['as'], "ac", ""))
+{
+	$HTTP_SESSION_VARS['as'] = '';
+	die("Access denied.");
+}
+elseif(($HTTP_GET_VARS[a]=="svd" || $HTTP_GET_VARS[a]=="sv" || $HTTP_GET_VARS[a]=="a" || $HTTP_GET_VARS[a]=="d" || $HTTP_GET_VARS[a]=="s") && !has_perm($HTTP_SESSION_VARS['userid'], $HTTP_SESSION_VARS['as'], "ac", "w"))
+{
+	die("Access denied. Read-Only.");
+}
+
+/*
+$query_rsAs = "SELECT * FROM gm_server WHERE type='as';";
+$rsAs = mysql_query($query_rsAs, $dbGmAdm) or die(mysql_error());
+*/
+
+$htmlAs="<select name=as_id onChange=\"postform(document.form1,'gmac.php?a=as')\"><option value=''></option>";
+//while($row=mysql_fetch_assoc($rsAs))
+foreach($arWc as $row)
+{
+	if($HTTP_SESSION_VARS['as']==$row[id])
+	{
+		$as_ip=$row[ip];
+		$as_dbuser=$row[dbuser];
+		$as_dbpasswd=$row[dbpasswd];
+		$selected="SELECTED";
+		$as_db=$row[db];
+
+		$dbAs = mysql_connect($as_ip,$as_dbuser,$as_dbpasswd);
+		if(!$dbAs)
+		{
+			$HTTP_SESSION_VARS['as'] = "";
+			echo "
+				<script>
+				function reload(){location.href='gmac.php'}
+				setTimeout(reload, 3000)
+				</script>
+				<p><font color=red>Page will be redirected in 3 seconds.</p>
+			";
+			die(mysql_error($dbAs));
+		}
+		mysql_select_db($as_db, $dbAs);
+	}
+	else
+	{
+		$selected="";
+	}
+	$htmlAs.="<option value='{$row[id]}' $selected>{$row[name]}</option>";
+}
+$htmlAs.="</select>";
+//mysql_free_result($rsAs);
+
+$query_rs=NULL;
+switch($HTTP_GET_VARS['a'])
+{
+	case 'as':
+		if($HTTP_POST_VARS[as_id]!='')$HTTP_SESSION_VARS['as']=$HTTP_POST_VARS[as_id];
+		header("Location: gmac.php");
+		exit();
+		break;
+	case 'svf':
+		$query_rs="UPDATE subscription SET SvcLevel='{$HTTP_POST_VARS[svclvl_to]}', SvcLevelChgDt=now(), LockOutTime=0 WHERE SvcLevel='{$HTTP_POST_VARS[svclvl_from]}';";
+		mysql_query($query_rs, $dbAs);
+
+		act_log(
+			array(
+				"server"=>"$as_ip",
+				"db"=>"$as_db",
+				"tbl"=>"subscription",
+				"act"=>"update all svclvl",
+				"cmd"=>$query_rs
+			)
+		);
+
+		break;
+	case 'sv':
+		$query_rs="UPDATE subscription SET SvcLevel='{$HTTP_POST_VARS[svclvl_all]}', SvcLevelChgDt=now(), LockOutTime=0;";
+		mysql_query($query_rs, $dbAs);
+
+		act_log(
+			array(
+				"server"=>"$as_ip",
+				"db"=>"$as_db",
+				"tbl"=>"subscription",
+				"act"=>"update all svclvl",
+				"cmd"=>$query_rs
+			)
+		);
+		break;
+	case 'svd':
+		mysql_select_db($database_dbGmAdm, $dbGmAdm);
+		$query_rs = "UPDATE gm_server SET defsvclvl='{$HTTP_POST_VARS[svclvl_def]}' WHERE id='{$HTTP_SESSION_VARS['as']}';";
+		$rs = mysql_query($query_rs, $dbGmAdm) or die(mysql_error($dbGmAdm));
+		act_log(
+			array(
+				"server"=>"$hostname_dbGmAdm",
+				"db"=>"$database_dbGmAdm",
+				"tbl"=>"gm_server",
+				"act"=>"update def svclvl",
+				"cmd"=>$query_rs
+			)
+		);
+		break;
+	case 'a':
+		$epassword = encrypt_passwd("{$HTTP_POST_VARS[passwd_0]}");
+		$query_rs = "INSERT INTO subscription(Username, Password, EPassword, SvcLevel) VALUES('{$HTTP_POST_VARS[account_0]}', '{$HTTP_POST_VARS[passwd_0]}', '$epassword', '{$HTTP_POST_VARS[svclvl]}')";
+		$rs = mysql_query($query_rs, $dbAs);
+		act_log(
+			array(
+				"server"=>"$as_ip",
+				"db"=>"$as_db",
+				"tbl"=>"subscription",
+				"act"=>"add game account",
+				"cmd"=>$query_rs
+			)
+		);
+		break;
+	case 'f':
+		$cond_account = $HTTP_POST_VARS[account_0]!=""? " AND Username LIKE \"$HTTP_POST_VARS[account_0]\"":"";
+		$cond_svclvl = $HTTP_POST_VARS[svclvl]!=""? " AND SvcLevel = \"$HTTP_POST_VARS[svclvl]\"":"";
+		$query_rs = "SELECT COUNT(*) FROM subscription WHERE 1 $cond_account $cond_password $cond_svclvl";
+		$rs = mysql_query($query_rs, $dbAs);
+		list($total_row) = mysql_fetch_array($rs);
+		
+		mysql_free_result($rs);
+
+		$page = (int) $_REQUEST['page'];
+		if($page < 1) $page = 1;
+		$total_pg = ceil($total_row / $rpp);
+		if($page > $total_pg) $page = 1;
+		$offset = ($page - 1) * $rpp;
+
+		$query_rs = "SELECT * FROM subscription WHERE 1 $cond_account $cond_password $cond_svclvl LIMIT $offset, $rpp";
+		$rs = mysql_query($query_rs, $dbAs);
+		break;
+	case 's':
+		if($HTTP_GET_VARS[i]!="")
+		{
+			$ids=array($HTTP_GET_VARS[i]);
+		}
+		else
+		{
+			$ids=$HTTP_POST_VARS[affected];
+		}
+		if(is_array($ids))
+			foreach ($ids as $idx){
+				$passwd = $HTTP_POST_VARS["passwd_{$idx}"];
+				$svclvl = $HTTP_POST_VARS["svclvl_{$idx}"];
+				$account = $HTTP_POST_VARS["account_{$idx}"];
+				$svclvlo = $HTTP_POST_VARS["svclvlo_{$idx}"];
+				$lockouttime = $HTTP_POST_VARS["dt_{$idx}"];
+
+				if(preg_match ("/(\d{4})-(\d{2})-(\d{2})/", $lockouttime, $regs) && $svclvl== -1)
+				{
+					$lockouttime = mktime(23,59,59, $regs[2], $regs[3], $regs[1]);
+				}
+				else{
+					$lockouttime = 0;
+				}
+
+				$epasswd = encrypt_passwd($passwd);
+				if($svclvlo==$svclvl)
+				{
+					$sql="UPDATE subscription SET Password='$passwd', EPassword='$epasswd', LockOutTime='$lockouttime', SvcLevel='$svclvl' WHERE Username='$account';";
+				}
+				else
+				{
+					$sql="UPDATE subscription SET Password='$passwd', EPassword='$epasswd', LockOutTime='$lockouttime', SvcLevel='$svclvl', SvcLevelChgDt=now() WHERE Username='$account';";
+				}
+				$query_rs = $sql;
+				$before = get_str_rs($dbAs, "SELECT * FROM subscription WHERE Username='{$account}';");
+				$rs = mysql_query($query_rs, $dbAs);
+				$after = get_str_rs($dbAs, "SELECT * FROM subscription WHERE Username='{$account}';");
+
+                act_log(
+					array(
+						"server"=>"$as_ip",
+						"db"=>"$as_db",
+						"tbl"=>"subscription",
+						"act"=>"update game account",
+						"cmd"=>$query_rs,
+						"before"=>$before,
+						"after"=>$after
+					)
+				);
+            }
+		break;
+	case 'd':
+		if($HTTP_GET_VARS[i]!="")
+		{
+			$ids=array($HTTP_GET_VARS[i]);
+		}
+		else
+		{
+			$ids=$HTTP_POST_VARS[affected];
+		}
+		if(is_array($ids))
+			foreach ($ids as $idx){
+				$account = $HTTP_POST_VARS["account_{$idx}"];
+/*
+	SELECT ip, db, dbuser, dbpasswd FROM gm_server WHERE type='wc' AND settings='{$HTTP_SESSION_VARS['as']}';
+	each wc
+	{
+		mysql_connect();
+		SELECT CharID FROM pcharacter WHERE username='{$account}';
+		each CharID
+		{
+			$charid_hash=$charid / 10;
+			DELECT FROM * WHERE CharID='$charid';
+				pcharacter, pcharstats, charinv_{$charid_hash}, effectlist_{$charid_hash}, powerlist_{$charid_hash},
+				skilllist_{$charid_hash}, stancelist_{$charid_hash}, partylist_{$charid_hash}, intdata, friend_{$charid_hash},
+				community, chatbarlist_{$charid_hash}, charquest, brotherlist_{$charid_hash}, barclanlist,
+
+			UPDATE * SET CharID=0 WHERE CharID='$charid';
+				uniqueitem
+		}
+	}
+*/
+				$query_rs = "DELETE FROM subscription WHERE Username='{$account}';";
+				$before = get_str_rs($dbAs, "SELECT * FROM subscription WHERE Username='{$account}';");
+				$rs = mysql_query($query_rs, $dbAs);
+
+				act_log(
+					array(
+						"server"=>"$as_ip",
+						"db"=>"$as_db",
+						"tbl"=>"subscription",
+						"act"=>"delete game account",
+						"cmd"=>$query_rs,
+						"before"=>$before
+					)
+				);
+			}
+		break;
+}
+$dbGmAdm = mysql_connect($hostname_dbGmAdm, $username_dbGmAdm, $password_dbGmAdm) or die(mysql_error());
+mysql_select_db($database_dbGmAdm, $dbGmAdm);
+$rs_def = mysql_query("SELECT defsvclvl FROM gm_server WHERE id='{$HTTP_SESSION_VARS['as']}'", $dbGmAdm) or die("err1: ".mysql_error($dbGmAdm));
+if(mysql_num_rows($rs_def) == 1)
+{
+	list($svclvl_def) = mysql_fetch_row($rs_def);
+}
+else
+{
+	$svclvl_def = "";
+}
+/*
+if($query_rs!=NULL && $HTTP_SESSION_VARS['as'])
+{
+	$dbAs = mysql_pconnect($as_ip,$as_dbuser,$as_dbpasswd) or die(mysql_error());
+	mysql_select_db($as_db, $dbAs);
+	foreach ($query_rs as $sql)
+	{
+		$rs = mysql_query($sql, $dbAs) or die(mysql_error());
+		//die($query_rs);
+	}
+}
+*/
+if(!($HTTP_GET_VARS[a]=="" || $HTTP_GET_VARS[a]=="f"))
+{
+	header("Location: gmac.php");
+	exit();
+}
+
+
+?>
+<html>
+<head>
+<title><?=BROWSER_TITLE?></title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="ga.css" rel="stylesheet" type="text/css"/>
+<link rel="STYLESHEET" type="text/css" href="calendar.css">
+<script language="JavaScript" src="simplecalendar.js" type="text/javascript"></script>
+<script language="JavaScript" type="text/JavaScript" src="common.js"></script>
+<script language="JavaScript" type="text/JavaScript">
+<!--
+function postform(form,url){
+	form.action=url;form.submit()
+}
+function postfind(form,url){
+	postform(document.form1,'gmac.php?a=f')
+}
+function doCheckAll(nm,v){
+	with (document.form1)
+		for (var i=0; i < elements.length; i++)
+			if (elements[i].type == 'checkbox' && elements[i].name == nm)elements[i].checked = v
+}
+function doSelectAll(nm,v){
+	with(document.form1)
+		for (var i=0; i < elements.length; i++)
+			if (elements[i].type == 'select-one' && elements[i].name.indexOf(nm)>=0)elements[i].selectedIndex = v;
+}
+function countTicked(nm){
+	var n=0
+	with(document.form1)
+		for(var i=0; i < elements.length; i++)
+			if (elements[i].type == 'checkbox' && elements[i].name == nm && elements[i].checked)n++;
+	return n
+}
+//-->
+</script>
+</head>
+<body>
+<form name="form1" method="post" action="">
+<h3 style="margin-bottom:0">Game Account</h3>(Authentication System: <?=$htmlAs?>)
+<br><br>
+<?php
+if($HTTP_SESSION_VARS['as']!='')
+{
+?>
+  <table border="1" cellspacing=0>
+    <tr>
+      <td>Account</td>
+      <td>Password (Min. 3 characters)</td>
+      <td>Service Level</td>
+      <td>Action</td>
+    </tr>
+    <tr bordercolor="#CCCCCC" bgcolor="#FFFF66">
+      <td> <input name="account_0" type="text" id="account_0" size="20" maxlength="20" value="<?=$_REQUEST['account_0']?>"></td>
+      <td> <input name="passwd_0" type="text" id="passwd_0" size="12" maxlength="8"></td>
+      <td><select name="svclvl" size="1">
+          <option value=""></option>
+          <option value="1" <?=$_REQUEST['svclvl']=="1"?"selected":""?>>Normal</option>
+          <option value="0" <?=$_REQUEST['svclvl']=="0"?"selected":""?>>Disabled</option>
+          <option value="-1" <?=$_REQUEST['svclvl']=="-1"?"selected":""?>>Suspended</option>
+          <option value="2" <?=$_REQUEST['svclvl']=="2"?"selected":""?>>Test</option>
+        </select></td>
+      <td>
+        <input type="button" name="Button" value="Add" onClick="if(document.form1.account_0.value.length<3){alert('Please enter a valid account name (at least 3 characters).');return 0};if(document.form1.passwd_0.value.length<3){alert('Please enter a valid password (at least 3 characters).');return 0};if(document.form1.svclvl.selectedIndex==0){alert('Please select service level');return 0};postform(document.form1,'gmac.php?a=a')//if(prompt('Confirm password','')==document.form1.passwd_0.value){postform(document.form1,'gmac.php?a=a')}else{alert('Password mismatched.')}">
+        <input type="button" name="Button" value="Find" onClick="postform(document.form1,'gmac.php?a=f')"> </td>
+    </tr>
+<?php
+$idx=0;
+if($HTTP_GET_VARS[a]=='f')
+while($row=mysql_fetch_assoc($rs))
+{
+	$idx++;
+	$dt = date('Y-m-d', $row[LockOutTime]);
+	$dt != "1970-01-01" or $dt = "Forever";
+?>
+    <tr onmouseover="this.className='hl'" onmouseout="this.className=''">
+      <td><input name="account_<?=$idx?>" type="text" size="20" maxlength="20" value="<?=$row[Username]?>" readonly="yes"></td>
+      <td>
+        <input name="passwd_<?=$idx?>" type="PASSWORD" size="12" maxlength="8" value="<?=$row[Password]?>" onchange="document.form1.elements('affected[]').item(<?=$idx?>-1).checked=1"></td>
+      <td><select name="svclvl_<?=$idx?>" onchange="document.all.span_<?=$idx?>.style.display=(this.value==-1)?'':'none' ;document.form1.elements('affected[]').item(<?=$idx?>-1).checked=1">
+          <option value="1" <? if($row[SvcLevel]=="1")echo "SELECTED";?>>Normal</option>
+          <option value="0" <? if($row[SvcLevel]=="0")echo "SELECTED";?>>Disabled</option>
+          <option value="-1" <? if($row[SvcLevel]=="-1")echo "SELECTED";?>>Suspended</option>
+          <option value="2" <? if($row[SvcLevel]=="2")echo "SELECTED";?>>Test</option>
+        </select>
+	<span style="display:<?= $row[SvcLevel]==-1?'':'none' ?>" name="span_<?=$idx?>" id="span_<?=$idx?>">
+	Until <input type="text" name="dt_<?=$idx?>" size="6" value="<?=$dt?>">
+	<a href="javascript: void(0);" onmouseover="if (timeoutId) clearTimeout(timeoutId);window.status='Show Calendar';return true;" onmouseout="if (timeoutDelay) calendarTimeout();window.status='';" onclick="document.form1.elements('affected[]').item(<?=$idx?>-1).checked=1;g_Calendar.show(event,'form1.dt_<?=$idx?>',false, 'yyyy-mm-dd'); return false;"><img src="images/calendar.gif" name="imgCalendar" width="34" height="21" border="0" alt=""></a>
+	</span>
+	<input type=hidden name="svclvlo_<?=$idx?>" value="<?=$row[SvcLevel]?>">
+	</td>
+      <td>
+        <input name="save_" type="button" id="save_" value="Save" onClick="if(confirm('Overwrite?'))postform(document.form1,'gmac.php?a=s&i=<?=$idx?>')">
+        <input name="delete_" type="button" id="delete_" value="Delete" onClick="if(confirm('Delete?'))postform(document.form1,'gmac.php?a=d&i=<?=$idx?>')">
+        <!--a href="gmchar.php?i=">character</a-->
+        <input type="checkbox" name="affected[]" value="<?=$idx?>">
+      </td>
+    </tr>
+<?php
+}
+//if($rs)mysql_free_result($rs);
+?>
+  </table>
+<?
+if(is_resource($rs))
+{
+	if(mysql_num_rows($rs) > 0)
+	{
+?>
+	Found <?=$total_row?> record(s). Page: <input name="page" value="<?=$page?>" size=3>/<?=$total_pg?> <input type=button value="Go" onclick="postfind()"> <a href="javascript:document.form1.page.value--;postfind()">Previous</a> <a href="javascript:document.form1.page.value++;postfind()">Next</a>
+	<br><br>Set all service level to
+          <select onchange="doSelectAll('svclvl_',this.options(selectedIndex).value);doCheckAll('affected[]',1)">
+          <option value=""></option>
+          <option value="0">Normal</option>
+          <option value="1">Disabled</option>
+          <option value="2">Suspended</option>
+          <option value="3">Test</option>
+        </select>
+      <br><input type="checkbox" onclick="doCheckAll('affected[]',this.checked)">Check/Uncheck All
+  <br>
+    <input type="reset" name="Reset" value="Reset" onclick="return(confirm('Rest and lost changes?'))">
+    <input type="button" value="Save Ticked(s)" onClick="if(countTicked('affected[]')==0){alert('No ticked');return 0}if(confirm('Overwrite ticked(s)?'))postform(document.form1,'gmac.php?a=s')">
+    <input type="button" value="Delete Ticked(s)" onClick="if(countTicked('affected[]')==0){alert('No ticked');return 0}if(confirm('Delete ticked(s)?'))postform(document.form1,'gmac.php?a=d')">
+<?
+	}
+	else
+	{
+		echo "<font color=red><b>No matched queries.</b></font>";
+	}
+}
+?>
+<hr>
+	Set service levels of accounts from
+          <select name="svclvl_from">
+          <option value="1">Normal</option>
+          <option value="0">Disabled</option>
+          <option value="-1">Suspended</option>
+          <option value="2">Test</option>
+        </select>
+	to
+          <select name="svclvl_to">
+          <option value="1">Normal</option>
+          <option value="0">Disabled</option>
+          <option value="-1">Suspended</option>
+          <option value="2">Test</option>
+        </select>
+	<input type="button" value="Apply" onclick="if(confirm('update service level for this group of accounts?'))postform(document.form1,'gmac.php?a=svf')">
+
+<hr>
+	Set service levels of all accounts to
+          <select name="svclvl_all">
+          <option value="1">Normal</option>
+          <option value="0">Disabled</option>
+          <option value="-1">Suspended</option>
+          <option value="2">Test</option>
+        </select> <input type="button" value="Apply" onclick="if(document.form1.svclvl_all.value==''){return alert('Please select valid service level')};if(confirm('update service level for all accounts?'))postform(document.form1,'gmac.php?a=sv')">
+<hr>
+	default service:
+          <select name="svclvl_def">
+          <option value="1" <?=($svclvl_def=="1")?"SELECTED":""?> >Normal</option>
+          <option value="0" <?=($svclvl_def=="0")?"SELECTED":""?> >Disabled</option>
+          <option value="-1" <?=($svclvl_def=="-1")?"SELECTED":""?> >Suspended</option>
+          <option value="2" <?=($svclvl_def=="2")?"SELECTED":""?> >Test</option>
+        </select> <input type="button" value="Apply" onclick="if(document.form1.svclvl_def.value==''){return alert('Please select valid service level')};if(confirm('Update default service level?'))postform(document.form1,'gmac.php?a=svd')">
+<!--
+<hr><a href="cleanlogin.php">Remove stucked login</a>
+-->
+  </p>
+<?
+}
+?>
+        <div style="display:none"><input type="checkbox" name="affected[]" value="">
+       	<a href="http://202.190.201.93:8100/admin/mis/psoCatalogue/catalogue-1.asp">PSO
+Account+Catalogue Management</a></div>
+</form>
+</body>
+</html>

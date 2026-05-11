@@ -1,0 +1,310 @@
+<?php
+require("auth.php");
+//if($HTTP_SESSION_VARS['permission']!=2 && ($HTTP_GET_VARS[a]=="a" || $HTTP_GET_VARS[a]=="d" || $HTTP_GET_VARS[a]=="s"))die("only game admin allowed edit");
+
+require_once('dbGmAdm.php');
+mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+
+$wid=$HTTP_POST_VARS[wid];
+if($HTTP_GET_VARS[wid])$wid=$HTTP_GET_VARS[wid];
+if($wid=="")
+{
+	$wid=$HTTP_SESSION_VARS['wid'];
+}
+else
+{
+	$HTTP_SESSION_VARS['wid']=$wid;
+}
+
+
+if(!has_perm($HTTP_SESSION_VARS['userid'], $wid, "conf", ""))
+{
+	die("Access denied.");
+}
+elseif(($HTTP_GET_VARS[a]=="log" || $HTTP_GET_VARS[a]=="b" || $HTTP_GET_VARS[a]=="stop" || $HTTP_GET_VARS[a]=="start" || $HTTP_GET_VARS[a]=="a" || $HTTP_GET_VARS[a]=="d" || $HTTP_GET_VARS[a]=="s" || $HTTP_GET_VARS[a]=="start" || $HTTP_GET_VARS[a]=="stop" || $HTTP_GET_VARS[a]=="log") && !has_perm($HTTP_SESSION_VARS['userid'], $wid, "gmdata", "w"))
+{
+	die("Access denied. Read-Only.");
+}
+
+$rsSvr = mysql_query("SELECT * FROM gm_server WHERE id='{$wid}'", $dbGmAdm) or die(mysql_error($dbGmAdm));
+if(mysql_num_rows($rsSvr) > 0)
+{
+	$row_rsSvr=mysql_fetch_assoc($rsSvr) or die("Invalid WorldController");
+	mysql_free_result($rsSvr);
+
+	$dbWc = mysql_pconnect($row_rsSvr[ip],$row_rsSvr[dbuser],$row_rsSvr[dbpasswd]) or die(mysql_error());
+	mysql_select_db($row_rsSvr[db], $dbWc);
+
+	$rsZs = mysql_query("SELECT DISTINCT Address FROM scene WHERE Address IS NOT NULL ORDER BY Address", $dbWc) or die(mysql_error($dbWc));
+}
+
+switch($HTTP_GET_VARS['a'])
+{
+	case 'start':
+		$zs = $HTTP_GET_VARS[zs];
+		$rs = mysql_query("SELECT 1 FROM scene WHERE Address='$zs'", $dbWc) or die(mysql_error($dbWc));
+		if(mysql_num_rows($rs) == 0)
+		{
+			die("Invalid ZS in WorldController");
+		}
+		$shell_cmd = "ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@$zs sudo -u $zs_username $START_ZS";
+		unset($shell_out);
+		exec($shell_cmd, $shell_out, $ret);
+		$after = join("\n", $shell_out);
+		act_log(
+			array(
+				"server"=>"$zs",
+				"act"=>"start zs",
+				"cmd"=>$shell_cmd,
+				"after"=>$after
+			)
+		);
+		echo "<script language=\"javascript\">location.href=\"gmzs.php\"</script>";
+		exit();
+		break;
+	case 'stop':
+		$zs = $HTTP_GET_VARS[zs];
+		$rs = mysql_query("SELECT 1 FROM scene WHERE Address='$zs'", $dbWc) or die(mysql_error($dbWc));
+		if(mysql_num_rows($rs) == 0)
+		{
+			die("Invalid ZS in WorldController");
+		}
+		$shell_cmd = "ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@$zs sudo -u $zs_username $SETCMD 1 ; sleep 1";
+		unset($shell_out);
+		exec($shell_cmd, $shell_out, $ret);
+		$after = join("\n", $shell_out);
+		if($ret){
+			die("Fail to stop zoneserver, $zs.");
+		}
+		act_log(
+			array(
+				"server"=>"$zs",
+				"act"=>"stop zs",
+				"cmd"=>$shell_cmd,
+				"after"=>$after
+			)
+		);
+		echo "<script language=\"javascript\">location.href=\"gmzs.php\"</script>";
+		exit();
+		break;
+/*
+	case 'log':
+		$zs = $HTTP_GET_VARS[zs];
+		$rs = mysql_query("SELECT 1 FROM scene WHERE Address='$zs'", $dbWc) or die(mysql_error($dbWc));
+		if(mysql_num_rows($rs) == 0)
+		{
+			die("Invalid ZS in WorldController");
+		}
+		echo "<pre>";
+		system("ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@$zs grep \"$HTTP_POST_VARS[logfilter]\" /var/log/zoneserver; . zoneserver ", $ret);
+		echo "</pre>";
+		break;
+*/
+	case 'b':
+		$affected = $HTTP_POST_VARS['affected'];
+		$btype = $HTTP_POST_VARS['btype']; //btype =1122
+		$bparam1 = $HTTP_POST_VARS['bparam1'];
+
+		if(is_array($affected))
+		{
+			foreach ($affected as $svr)
+			{
+				exec("ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@$svr pwd", $shell_out, $ret);
+				if($ret == 255)
+				{
+					die("remote game admin is not setup on zoneserver, $svr.");
+				}
+			}
+			foreach ($affected as $svr)
+			{
+				echo "<br>";
+				$shell_cmd = "ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@$svr sudo -u $zs_username $SETCMD 6 $btype $bparam1";
+				unset($shell_out);
+				exec($shell_cmd, $shell_out, $ret);
+				$after = join("\n", $shell_out);
+				if($ret != 0)
+				{
+					echo("<br>Broadcast to zoneserver, $svr, failed<br>");
+					break;
+				}
+				act_log(
+					array(
+						"server"=>"$svr",
+						"act"=>"broadcast to zs",
+						"cmd"=>$shell_cmd,
+						"after"=>$after
+					)
+				);
+				echo "<br>Broadcast to zoneserver, $svr, done.<br>";
+			}
+		}
+		else
+		{
+			die('<br>No zoneserver is selected to be broadcasted.');
+		}
+
+		echo "<p><a href=\"gmzs.php?wid=$wid\">Back</a>";
+		exit();
+		break;
+	case '':break;
+	default:
+		die("Invalid action");
+}
+
+$arWc = get_accessible_server($HTTP_SESSION_VARS['userid'], 'wc');
+$htmlWc="<select name=wid onchange=\"postform(document.form1,'gmzs.php')\"><option value=''></option>";
+foreach($arWc as $row)
+{
+	$selected=($wid==$row[id])?"SELECTED":"";
+	$htmlWc.="<option value='{$row[id]}' $selected>{$row[name]}</option>";
+}
+$htmlWc.="</select>";
+
+$html_zslist = "";
+
+$current_server_id=0;
+$n=0;
+if(is_resource($rsZs))
+{
+	$total_udp = 0;
+	while($row=mysql_fetch_assoc($rsZs))
+	{
+
+		$n++;
+
+		$rsScene = mysql_query("SELECT SceneFileName,SceneID,ServerID FROM scene WHERE Address='{$row[Address]}' ORDER BY ServerID, SceneFileName", $dbWc) or die(mysql_error($dbWc));
+		$html_serverid = $html_sceneid = $html_scene = '';
+		while($row_zs=mysql_fetch_assoc($rsScene))
+		{
+			$html_scene .= "{$row_zs[SceneFileName]}<br>";
+			$html_sceneid .= "{$row_zs[SceneID]}<br>";
+			$html_serverid .= "{$row_zs[ServerID]}<br>";
+		}
+
+		$html_zslist .= "<tr valign=top><td>$n</td><td>{$row[Address]} &nbsp;</td><td>$html_scene &nbsp;</td><td>$html_sceneid</td><td>$html_serverid</td><td>";
+
+		system("ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@{$row[Address]} \"\\\$(locate *\/pidof) zoneserver\" > /dev/null", $ret);
+		//echo "ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@{$row[Address]} /sbin/pidof zoneserver > /dev/null";
+		switch ($ret)
+		{
+			case '0':
+				//$concurrent_udp = exec("ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@{$row[Address]} netstat -un|wc -l");
+				$html_zslist .= "<input type=button value=stop onclick=\"if(confirm('stop'))location.href='gmzs.php?wid=$wid&zs={$row[Address]}&a=stop'\">";
+				unset($out);
+				exec("ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@{$row[Address]} netstat -un | wc -l", $out, $ret);
+				$html_zslist .= "<br>Connected Game client(s): " . ($out[0] - 2);
+				$total_udp += $out[0] - 2;
+				break;
+			case '1':
+				$html_zslist .= "<input type=button value=start onclick=\"location.href='gmzs.php?wid=$wid&zs={$row[Address]}&a=start'\">";
+				break;
+			case '255':
+				$html_zslist .= "Remote game admin not setup";
+				break;
+			default:
+				$html_zslist .= "-";
+		}
+		$html_zslist .= "</td><td><input type=checkbox name=\"affected[]\" value=\"{$row[Address]}\"></td></tr>";
+	}
+}
+?>
+<html>
+<head>
+<title><?=BROWSER_TITLE?></title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="ga.css" rel="stylesheet" type="text/css"/>
+<script language="JavaScript" type="text/JavaScript">
+<!--
+function postform(form,url){
+	form.action=url;form.submit()
+}
+function saveid(i)
+{
+	if(eval("!document.form1.mark_"+i+".value"))
+	{
+		eval("document.form1.mark_"+i+".value=1")
+		document.form1.ids.value+=i+"|"
+	}
+}
+function doCheckAll(nm,v){
+	with (document.form1)
+		for (var i=0; i < elements.length; i++)
+			if (elements[i].type == 'checkbox' && elements[i].name == nm)elements[i].checked = v
+}
+
+//-->
+</script>
+</head>
+<body>
+<form name="form1" method="post" action="">
+<h3>Zone Server List</h3>
+(World Controller: <?=$htmlWc?>)
+<br><input type=button value=Refresh onclick="location.reload()">
+<p>
+	<pre><?=$stdout?></pre>
+	Total connected game client(s): <?=$total_udp?><br>
+  <table border="1" cellspacing=0>
+	<tr>
+		<td>#</td>
+		<!--td>Server ID</td-->
+		<td>IP</td>
+		<td>Scene(s)</td>
+		<td>SceneID</td>
+		<td>ServerID</td>
+		<td>Action</td>
+		<td>Broadcast <input type=checkbox onclick="doCheckAll('affected[]',this.checked)"></td>
+	</tr>
+	<?=$html_zslist?>
+</table>
+<p>
+<b>Broadcast</b>
+<table>
+<tr>
+	<td>type</td>
+	<td><select name="btype"><option value="1122">shutdown (param1=minute)</option></select></td>
+</tr>
+<tr>
+	<td>param1</td>
+	<td><input name=bparam1 size=2></td>
+</tr>
+<tr>
+	<td colspan=2><input type=button value="Send" onclick="postform(document.form1, 'gmzs.php?wid=$wid&a=b')"></td>
+</tr>
+</table>
+
+<input type=hidden name=logfilter value="">
+<!--<input type="hidden" name="ids" value="">-->
+<!--input type="button" onclick="alert(document.form1.ids.value)"-->
+<?
+/*
+<p><hr>
+
+$data = file("$rsa_file.pub");
+$username="$remote_username";
+$html_zs = "<b>Login to the zoneserver as root, make sure \\'sudo\\' is installed and run the following commands,</b><br>";
+$html_zs .= "adduser --disabled-password --gecos \\'\\' {$username}";
+$html_zs .= "<br>su {$username}";
+$html_zs .= '<br>cd';
+$html_zs .= '<br>mkdir .ssh';
+$html_zs .= '<br>chmod 700 .ssh';
+$html_zs .= "<br>echo {$data[0]} >> .ssh/authorized_keys2";
+$html_zs .= '<br>chmod 700 .ssh/authorized_keys2</font>';
+$html_zs .= "<br>exit";
+$html_zs .= "<br>echo \\'#!/bin/sh\\' &gt; $START_ZS";
+$html_zs .= "<br>echo \\'$RUN_ZS\\' &gt;&gt; $START_ZS";
+$html_zs .= "<br>chmod +x $START_ZS";
+$html_zs .= "<br>visudo";
+$html_zs .= "<br>1000000jo";
+$html_zs .= "<br>$remote_username ALL= ($zs_username) NOPASSWD: $SETCMD";
+$html_zs .= "<br>$remote_username ALL= ($zs_username) NOPASSWD: $START_ZS";
+$html_zs .= "<br><b>You now stop in vi insert mode, save the configuration and quit vi, then you are done.</b>";
+
+<a href="javascript:var w=window.open();w.document.write('<?=$html_zs?>')">how to setup remote game admin for zoneserver</a>
+*/
+?>
+
+
+</form>
+</body>
+</html>

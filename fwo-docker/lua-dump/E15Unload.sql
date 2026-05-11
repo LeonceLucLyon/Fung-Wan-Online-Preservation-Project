@@ -1,0 +1,1 @@
+delete from genhints where StringID >=32050 and StringID <=32052;

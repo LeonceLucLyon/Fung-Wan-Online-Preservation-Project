@@ -1,0 +1,210 @@
+<?php
+require("auth.php");
+//if($HTTP_SESSION_VARS['permission']!=2 && ($HTTP_GET_VARS[a]=="a" || $HTTP_GET_VARS[a]=="d" || $HTTP_GET_VARS[a]=="s"))die("only game admin allowed edit");
+
+require_once('dbGmAdm.php');
+mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+
+$wid=$HTTP_GET_VARS["wid"];
+if($wid=="")
+{
+	die("World controller not set");
+}
+else
+{
+	if(!has_perm($HTTP_SESSION_VARS['userid'], $wid, "gmchar", ""))
+	{
+		die("Access denied.");
+	}
+	elseif(($HTTP_GET_VARS[a]=="a" || $HTTP_GET_VARS[a]=="d" || $HTTP_GET_VARS[a]=="s") && !has_perm($HTTP_SESSION_VARS['userid'], $wid, "gmchar", "w"))
+	{
+		die("Access denied. Read-Only.");
+	}
+
+	$rsSvr = mysql_query("SELECT * FROM gm_server WHERE id='{$wid}'", $dbGmAdm) or die(mysql_error());
+	$row_rsSvr=mysql_fetch_assoc($rsSvr) or die("Invalid WorldController");
+	mysql_free_result($rsSvr);
+	$wc_ip = $row_rsSvr[ip];
+	$wc_db = $row_rsSvr[db];
+	$dbWc = mysql_pconnect($row_rsSvr[ip],$row_rsSvr[dbuser],$row_rsSvr[dbpasswd]) or die(mysql_error());
+	mysql_select_db($row_rsSvr[db], $dbWc);
+
+
+	$query_rs = "SELECT * FROM pcharacter WHERE CharID='{$HTTP_GET_VARS[i]}'";
+	$rs = mysql_query($query_rs, $dbWc) or die(mysql_error());
+	if(mysql_num_rows($rs) == 0) die("<font color=red>No matched queries.</font>");
+	$row=mysql_fetch_assoc($rs);
+	mysql_free_result($rs);
+
+$pos=(float)$HTTP_POST_VARS[questno];
+$data = $row[QuestData];
+$len=strlen($data);
+$blank = ($pos > $len)?	str_repeat("\0", $pos - $len) : "";
+$data .= $blank;
+$len=strlen($data);
+
+
+	if($HTTP_GET_VARS[a]=="s")
+	{
+
+		$new=(float)$HTTP_POST_VARS[questval];
+		$head=($pos > 1)? substr($data,0,$pos-1):"";
+		$tail=($len > $pos)? substr($data,$pos):"";
+		$data = $head . chr($new) . $tail;
+		$data_in_hex="0x";
+		for($n=0;$n<$len;$n++)
+		{
+			$data_in_hex.=str_pad(dechex(ord($data[$n])),2,'0',STR_PAD_LEFT);
+		}
+
+		$query_rs = "UPDATE pcharacter SET
+			QuestData={$data_in_hex}
+			WHERE CharID='{$HTTP_GET_VARS[i]}'";
+
+		$html_rs = $query_rs;
+		echo $query_rs;
+//		exit();
+
+
+/*			Job='{$HTTP_POST_VARS[job]}',
+			QuestData='{$HTTP_POST_VARS[questdata]}',
+			UserMsg1='{$HTTP_POST_VARS[usermsg1]}',
+			UserMsg2='{$HTTP_POST_VARS[usermsg2]}',
+			UserMsg3='{$HTTP_POST_VARS[usermsg3]}',
+			UserMsg4='{$HTTP_POST_VARS[usermsg4]}',
+			UserMsg5='{$HTTP_POST_VARS[usermsg5]}',
+*/
+		$rs_logon = mysql_query("SELECT * FROM authenticated WHERE CharID='{$HTTP_GET_VARS[i]}'", $dbWc) or die(mysql_error());
+		$is_logon=mysql_num_rows($rs_logon);
+		mysql_free_result($rs_logon);
+		if($is_logon && $HTTP_GET_VARS[force]!=1)
+		{
+			echo "<form name=form1 action=\"{$HTTP_SERVER_VARS[REQUEST_URI]}&force=1\" method='Post'>";
+			echo generate_form('',$HTTP_POST_VARS);
+			echo "<input type=button value='Force Save' onclick='if(confirm(\"Do not force save if the character is being used or this will cause data error.\"))document.form1.submit()'></form>";
+			//post_form('document.form1',$HTTP_SERVER_VARS[REQUEST_URI]."&force=1");
+			die("game character is being used, write access deny");
+		}
+
+		$befores = get_str_rs($dbWc, "SELECT * FROM pcharacter WHERE CharID='{$HTTP_GET_VARS[i]}';");
+		$rs = mysql_query($query_rs, $dbWc) or die(mysql_error($dbWc));
+		$after   = get_str_rs($dbWc, "SELECT * FROM pcharacter WHERE CharID='{$HTTP_GET_VARS[i]}';");
+		
+		echo generate_form('form1',$HTTP_POST_VARS);
+		post_form('document.form1',"questdata.php?i={$HTTP_GET_VARS[i]}&wid=$wid");
+//		header("Location: questdata.php?i={$HTTP_GET_VARS[i]}&wid=$wid");
+		exit();
+	}
+
+	$ch = substr($data, $pos - 1, 1);
+	$chval=ord($ch);
+}
+
+?>
+<html>
+<head>
+<title><?=BROWSER_TITLE?></title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="ga.css" rel="stylesheet" type="text/css"/>
+<script language="JavaScript" type="text/JavaScript">
+<!--
+function postform(form,url){
+	form.action=url;form.submit()
+}
+//-->
+</script>
+</head>
+<body>
+
+<h3>Player Character Quest Record</h3>
+(World Controller: <?=$row_rsSvr[name]?>)
+<form name="form1" method="post" action="">
+   <p>Properties: <a href="pcharacter.php?i=<?=$HTTP_GET_VARS[i]?>&wid=<?=$wid?>">Character</a>
+	| <a href="pcharstat.php?i=<?=$HTTP_GET_VARS[i]?>&wid=<?=$wid?>">Stat</a>
+	| <a href="charinv.php?f=<?=$HTTP_GET_VARS[i]?>&wid=<?=$wid?>">Inventory</a>
+	| <a href="powerlist.php?f=<?=$HTTP_GET_VARS[i]?>&wid=<?=$wid?>">Power</a>
+	| <a href="skilllist.php?f=<?=$HTTP_GET_VARS[i]?>&wid=<?=$wid?>">Skill</a>
+	| <a href="effectlist.php?f=<?=$HTTP_GET_VARS[i]?>&wid=<?=$wid?>">Effect</a>
+	| <a href="stancelist.php?f=<?=$HTTP_GET_VARS[i]?>&wid=<?=$wid?>">Stance</a>
+	| <!--a href="questdata.php?i=<?=$HTTP_GET_VARS[i]?>&wid=<?=$wid?>"-->Quest<!--/a-->
+</p>
+<table cellpadding=0 cellspacing=0>
+	<tr valign=top>
+		<td><table>
+				<tr>
+					<td>User Name</td>
+					<td><input name="username" type="text" id="username" value="<?=$row[Username]?>" readonly="yes"></td>
+				</tr>
+				<tr>
+					<td>Char Name</td>
+					<td><input name="charactername" type="text" id="charactername" value="<?=htmlspecialchars(U16btoU8str($row[CharacterName]))?>" readonly="yes"></td>
+				</tr>
+				<tr>
+					<td>Char ID</td>
+					<td><input name="CharID" type="text" id="CharID" value="<?=$row[CharID]?>" readonly="yes"></td>
+				</tr>
+			</table>
+			<table border=1 cellspacing=0>
+				<tr>
+					<td>Quest No</td>
+					<td><input name="questno" type="text" value="<?=$HTTP_POST_VARS[questno]?>"> <input type=button value=Search onclick="postform(document.form1,'questdata.php?a=f&i=<?=$HTTP_GET_VARS[i]?>&wid=<?=$wid?>')"></td>
+				</tr>
+				<tr>
+					<td>Quest State</td>
+					<td><input name="questval" type="text" value="<?=$chval?>">
+						<input type="reset" name="Reset" value="Reset">
+						<input type="button" name="Button" value="Save" onClick="if(confirm('Overwrite?'))postform(document.form1,'questdata.php?a=s&i=<?=$HTTP_GET_VARS[i]?>&wid=<?=$wid?>')">
+					</td>
+				</tr>
+			</table>
+		</td>
+		<td>&nbsp;&nbsp;</td>
+		<td><?=$quest_state_ref?></td>
+	</tr>
+</table>
+</form>
+<?
+$m=0;
+$html_quest = '';
+for($n=0;$n<$len;$n++)
+{
+	$v=ord($data[$n]);
+/*
+	echo (($n%10)==0)? "<tr>":"";
+	echo "<td bgcolor=eeeeee>".($n+1)."</td><td".(($v)?" bgcolor=yellow":"").">$v</td>";
+*/
+	if($v)
+	{
+		$quest_no = $n + 1;
+		if($readonly_gmdata)
+		{
+			if($quest_no >= 250 && $quest_no <= 260)
+				continue;
+		}
+		$quest_name = getstring($quest_no, 'quest');
+		if($quest_name == $quest_no)
+		{
+			$quest_name = '';
+		}
+		else
+		{
+			$quest_name = U16btoU8str($quest_name);
+		}
+		$html_quest .= "<tr><td>{$quest_no}</td><td>{$quest_name}&nbsp;</td><td>$v</td></tr>";
+	}
+}
+if($html_quest)
+{
+	echo "<table border=1 cellspacing=0><tr><th>Quest No</th><th>Description</th><th>Quest State</th></tr>";
+	echo $html_quest;
+	echo "</table>";
+}
+else
+{
+	echo "<p><font color=red><b>No assigned quest.</b></font>";
+}
+echo $html_rs;
+?>
+</body>
+</html>

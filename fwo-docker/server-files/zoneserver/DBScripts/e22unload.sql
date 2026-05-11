@@ -1,0 +1,1 @@
+delete from fwworlddevdb.events where EventID=33285;

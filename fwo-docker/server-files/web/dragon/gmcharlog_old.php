@@ -1,0 +1,616 @@
+<?php
+$rpp  = 25;
+$offset = 0;
+
+function sec2str($sec)
+{
+	$d = floor($sec / 86400);
+	$h = floor(($sec % 86400) / 3600);
+	$m = floor(($sec % 3600) / 60);
+	$s = floor(($sec % 3600) % 60);
+	if ($d) $d_str = "{$d}d ";
+	if ($h) $hr_str = "{$h}h ";
+	if ($m) $min_str = "{$m}m ";
+	if ($s) $sec_str = "{$s}s";
+	return "{$d_str}{$hr_str}{$min_str}{$sec_str}";
+}
+require('stringTokenizer.php');
+require('auth.php');
+require('dbGmAdm.php');
+mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+if(!has_perm($HTTP_SESSION_VARS['userid'], "0", "conf", ""))
+{
+	die("Access denied.");
+}
+
+$wid=$HTTP_POST_VARS[wid];
+if($HTTP_GET_VARS[wid])$wid=$HTTP_GET_VARS[wid];
+if($wid=="")
+{
+	$wid=$HTTP_SESSION_VARS['wid'];
+}
+else
+{
+	$HTTP_SESSION_VARS['wid']=$wid;
+}
+
+if(!has_perm($HTTP_SESSION_VARS['userid'], $wid, "gmchar", "") )
+{
+	$HTTP_SESSION_VARS['wid'] = '';
+	die("Access denied.");
+}
+
+$dbWc = NULL;
+
+if($wid)
+{
+	$rsSvr = mysql_query("SELECT * FROM gm_server WHERE id='{$wid}'", $dbGmAdm) or die(mysql_error($dbGmAdm));
+	$row_rsSvr=mysql_fetch_assoc($rsSvr) or die("Invalid worldcontroller");
+	mysql_free_result($rsSvr);
+
+	$rsLog = mysql_query("SELECT * FROM gm_server WHERE ip='{$row_rsSvr[ip]}' AND type = 'lg' ", $dbGmAdm) ;
+	//echo "SELECT * FROM gm_server WHERE ip='{".$row_rsSvr[ip]."}' AND type = 'lg' ";
+
+
+	while($row_rsLog = mysql_fetch_assoc($rsLog))
+	{
+		$dbLog = mysql_pconnect($row_rsLog[ip],$row_rsLog[dbuser],$row_rsLog[dbpasswd]);
+		mysql_select_db($row_rsLog[db], $dbLog);
+	}
+}
+
+$y = $HTTP_POST_VARS['year'];
+$m = $HTTP_POST_VARS['month'];
+$d = $HTTP_POST_VARS['day'];
+$h = $HTTP_POST_VARS['hour'];
+$min = $HTTP_POST_VARS['minute'];
+$sec = $HTTP_POST_VARS['second'];
+$scriptid = $HTTP_POST_VARS['script_id'];
+$logid = $HTTP_POST_VARS['log_id'];
+$charid = $HTTP_POST_VARS['char_id'];
+$param_0 = $HTTP_POST_VARS['param0'];
+$param_1 = $HTTP_POST_VARS['param1'];
+$param_2 = $HTTP_POST_VARS['param2'];
+$param_3 = $HTTP_POST_VARS['param3'];
+$param_4 = $HTTP_POST_VARS['param4'];
+$param_5 = $HTTP_POST_VARS['param5'];
+$param_6 = $HTTP_POST_VARS['param6'];
+$param_7 = $HTTP_POST_VARS['param7'];
+$param_8 = $HTTP_POST_VARS['param8'];
+$param_9 = $HTTP_POST_VARS['param9'];
+
+
+is_numeric($y) or $y=2005;
+
+
+$query = "SELECT
+	year(from_unixtime(dt)) as y,
+	month(from_unixtime(dt)) as m,
+	dayofmonth(from_unixtime(dt)) as d,
+	hour(from_unixtime(dt)) as h,
+	minute(from_unixtime(dt)) as min,
+	second(from_unixtime(dt)) as sec,
+	charid as charid,
+	scriptid as scriptid,
+	logid as logid,
+	param_0 as param_0,
+	param_1 as param_1,
+	param_2 as param_2,
+	param_3 as param_3,
+	param_4 as param_4,
+	param_5 as param_5,
+	param_6 as param_6,
+	param_7 as param_7,
+	param_8 as param_8,
+	param_9 as param_9,
+	groups as groups
+	FROM logInfo WHERE 1 $cond
+";
+
+if(is_numeric($y))
+{
+	$query .= "AND year(from_unixtime(dt))=$y ";
+}
+if(is_numeric($m))
+{
+	$query .= "AND month(from_unixtime(dt))=$m ";
+}
+if(is_numeric($d))
+{
+	$query .= "AND dayofmonth(from_unixtime(dt))=$d ";
+}
+if(is_numeric($charid))
+{
+	$query .= "AND charid=$charid ";
+}
+if(is_numeric($scriptid))
+{
+	$query .= "AND scriptid=$scriptid ";
+}
+if(is_numeric($logid))
+{
+	$query .= "AND logid=$logid ";
+}
+if(is_numeric($param_0))
+{
+	$query .= "AND param_0=$param_0 ";
+}
+if(is_numeric($param_1))
+{
+	$query .= "AND param_1=$param_1 ";
+}
+if(is_numeric($param_2))
+{
+	$query .= "AND param_2=$param_2 ";
+}
+if(is_numeric($param_3))
+{
+	$query .= "AND param_3=$param_3 ";
+}
+if(is_numeric($param_4))
+{
+	$query .= "AND param_4=$param_4 ";
+}
+if(is_numeric($param_5))
+{
+	$query .= "AND param_5=$param_5 ";
+}
+if(is_numeric($param_6))
+{
+	$query .= "AND param_6=$param_6 ";
+}
+if(is_numeric($param_7))
+{
+	$query .= "AND param_7=$param_7 ";
+}
+if(is_numeric($param_8))
+{
+	$query .= "AND param_8=$param_8 ";
+}
+if(is_numeric($param_9))
+{
+	$query .= "AND param_9=$param_9 ";
+}
+
+
+$hd = "<h3>Search Result</h3>";
+$html = "<tr><th><b>Year</b></th><th><b>Month</b></th><th><b>Day</b></th><th><b>Time</b></th><th><b>CharID</b></th><th><b>ScriptID</b></th><th><b>LogID</b></th><th><b>Message</b></th></tr>";
+
+//echo $query;
+
+	$query .= " ORDER BY dt";
+
+	if($wid)
+	{
+		if(mysql_num_rows($rsLog) == 0)
+		{
+			$warn = "<tr><td colspan=5><font color=red>No matched fwcharlog DB found.</font></td></tr>";
+			echo $warn;
+		}
+		else
+		{
+			$rs = mysql_query($query) or die(mysql_error());
+
+			$total_row = mysql_num_rows($rs);
+            
+			$page = (int) $_REQUEST['page'];
+			if($page < 1) $page = 1;
+			$total_pg = ceil($total_row / $rpp);
+			if($page > $total_pg) $page = 1;
+			$offset = ($page - 1) * $rpp;
+		}
+	}
+
+	if($rs)
+	{
+		if(mysql_num_rows($rs) == 0)
+		{
+			$html .= "<tr><td colspan=10><font color=red>No matched queries.</font></td></tr>";
+		}
+		else
+		{
+			mysql_free_result($rsLog);
+			while($row = mysql_fetch_assoc($rs))
+			{
+				$arr_paramlist= array($row[param_0], $row[param_1], $row[param_2], $row[param_3], $row[param_4], $row[param_5], $row[param_6], $row[param_7], $row[param_8], $row[param_9]);
+
+				$dbGmAdm = mysql_pconnect($hostname_dbGmAdm,$username_dbGmAdm,$password_dbGmAdm) or die(mysql_error());
+				mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+				if($wid)
+				{
+					$rsSvr = mysql_query("SELECT * FROM gm_server WHERE id='{$wid}'", $dbGmAdm) or die(mysql_error($dbGmAdm));
+					$row_rsSvr=mysql_fetch_assoc($rsSvr) or die("Invalid worldcontroller");
+					mysql_free_result($rsSvr);
+
+					$rsLog = mysql_query("SELECT * FROM gm_server WHERE ip='{$row_rsSvr[ip]}' AND type = 'lg' ", $dbGmAdm) ;
+
+					if(mysql_num_rows($rsLog) == 0)
+					{
+						$html .= "<tr><td colspan=5><font color=red>No matched log DB.</font></td></tr>";
+					}
+
+					while($row_rsLog = mysql_fetch_assoc($rsLog))
+					{
+						$dbLog = mysql_pconnect($row_rsLog[ip],$row_rsLog[dbuser],$row_rsLog[dbpasswd]);
+						mysql_select_db($row_rsLog[db], $dbLog);
+					}
+					if(mysql_num_rows($rsLog) == 0)
+					{
+						$html .= "<tr><td colspan=5><font color=red>No matched log DB.</font></td></tr>";
+					}
+					mysql_free_result($rsLog);
+				}
+
+				$query2= "SELECT logmsg FROM groups WHERE logid=$row[logid] ";
+
+				$rs2 = mysql_query($query2) or die(mysql_error());
+				$row2=mysql_fetch_row($rs2);
+
+				mysql_free_result($rs2);
+
+				$string = $row2[0];
+				$first_delim_cnt = substr_count($string, '[');
+				$sec_delim_cnt = substr_count($string, ']');
+				if($first_delim_cnt != $sec_delim_cnt) die("number of open & close brackets in log message not matched");
+
+				if(strstr($string, '[') && strstr($string, ']'))
+				{
+					//echo "<br>TranslateLogMsg : str = ".$string;
+
+					for($n = 0; $n < $first_delim_cnt; $n++)
+					{
+						$first_pos = strpos($string,'[');
+						$sec_pos = strpos($string,']');
+
+						for($i=$first_pos+1; $i < $sec_pos; $i++)
+						{
+							$tag=$tag.$string{$i};
+						}
+
+						$string{$first_pos}="";
+						$string{$sec_pos}="";
+						$strFirst = substr($string,0,$first_pos);
+						$strSec = substr($string,$sec_pos + 1,strlen($string));
+
+						switch($tag)
+						{
+						//CHAR, ITEM, SKILL, STANCE, POWER, CLAN, EFFECT, SCENE, TIME, OBJECT, NPC
+							case 'CHAR':
+
+								$dbGmAdm = mysql_pconnect($hostname_dbGmAdm,$username_dbGmAdm,$password_dbGmAdm) or die(mysql_error());
+								mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+								$rsSvr = mysql_query("SELECT * FROM gm_server WHERE id='{$wid}'", $dbGmAdm) or die(mysql_error($dbGmAdm));
+
+								$row_rsSvr=mysql_fetch_assoc($rsSvr) or die("Invalid worldcontroller");
+								mysql_free_result($rsSvr);
+
+								$dbWc = mysql_pconnect($row_rsSvr[ip],$row_rsSvr[dbuser],$row_rsSvr[dbpasswd]);
+								mysql_select_db($row_rsSvr[db], $dbWc);
+
+								$sql_query="SELECT * FROM pcharacter WHERE CharID = $arr_paramlist[$n]";
+								$rs_desc = mysql_query($sql_query) or die(mysql_error());
+								while($row_desc = mysql_fetch_assoc($rs_desc))
+								{
+									$datadesc=htmlspecialchars(U16btoU8str($row_desc["CharacterName"]));
+								}
+
+								$replaced_tag = "{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+							case 'ITEM':
+								$dbGmAdm = mysql_pconnect($hostname_dbGmAdm,$username_dbGmAdm,$password_dbGmAdm) or die(mysql_error());
+								mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+								$datadesc = htmlspecialchars(U16btoU8str(getstring($arr_paramlist[$n], 'item')));
+
+                                
+								$replaced_tag = "{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+							case 'SKILL':
+
+								$dbGmAdm = mysql_pconnect($hostname_dbGmAdm,$username_dbGmAdm,$password_dbGmAdm) or die(mysql_error());
+								mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+								$datadesc = htmlspecialchars(U16btoU8str(getstring($arr_paramlist[$n], 'skill')));
+								$replaced_tag = "{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+							case 'STANCE':
+                                
+								$replaced_tag = "{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+							case 'POWER':
+								$dbGmAdm = mysql_pconnect($hostname_dbGmAdm,$username_dbGmAdm,$password_dbGmAdm) or die(mysql_error());
+								mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+								$datadesc = htmlspecialchars(U16btoU8str(getstring($arr_paramlist[$n], 'power')));
+								//echo "POWER".$arr_paramlist[$n];
+								$replaced_tag = "{$datadesc}({$arr_paramlist[$n]})";
+								break;
+							case 'CLAN':
+								//echo "CLAN".$arr_paramlist[$n];
+
+								$replaced_tag = "CLAN{$datadesc}({$arr_paramlist[$n]})";
+                                //$testvalue = "{$datadesc}({$arr_paramlist[$n]})";
+								break;
+							case 'EFFECT':
+								//echo "EFFECT".$arr_paramlist[$n];
+								$replaced_tag = "{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+							case 'SCENE':
+								//echo "SCENE".$arr_paramlist[$n];
+								$replaced_tag = "SCENE{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+							case 'TIME':
+								//echo "TIME".$arr_paramlist[$n];
+								$replaced_tag = "TIME{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+							case 'OBJECT':
+								//echo "OBJECT".$arr_paramlist[$n];
+								$replaced_tag = "OBJECT{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+							case 'NPC':
+
+								$replaced_tag = "NPC{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+							case 'VALUE':
+
+								$replaced_tag = "VALUE{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+                            case 'INT':
+                                //$cincau = 4294966296;
+                                //$cincau = 4294966296;
+                                //printf("value1 = '%s'\n", $cincau);
+                                //printf("value = '%d'\n", $cincau);
+                                //$testvalue = sscanf($cincau, "%d");
+                                //$testvalue = sprintf("%f",$cincau);
+                                //printf("value = '%d'\n", $testvalue1);
+                                //$testvalue2 = "INT{$datadesc}({$arr_paramlist[$n]})";
+                                //$testvalue = "INT{$datadesc}({$arr_paramlist[$n]})";
+                                $replaced_tag = "INT{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+							default:
+								//echo "Tag {$tag} not found.";
+								//$replaced_tag = "UNKNOWN TAG{$datadesc}({$arr_paramlist[$n]})";
+								$replaced_tag = "$tag{$datadesc}({$arr_paramlist[$n]})";
+
+								break;
+						}
+
+						$string = $strFirst.$replaced_tag.$strSec;
+						$replaced_tag = "";
+						$datadesc="";
+						$tag="";
+						//echo"<br> temp message =".$string;
+					}
+					$tag_count++;
+
+				}
+
+				$row[h] = sprintf("%02d",$row[h]);
+				$row[min] = sprintf("%02d",$row[min]);
+				$row[sec] = sprintf("%02d",$row[sec]);
+				$html .= "<tr><td>$row[y]</td><td>$row[m]</td><td>$row[d]</td><td>$row[h]:$row[min]:$row[sec]</td><td>$row[charid]</td><td>$row[scriptid]</td><td>$row[logid]</td><td>$string</td></tr>";
+			}
+		}
+	}
+
+$arWc = get_accessible_server($HTTP_SESSION_VARS['userid'], 'wc');
+
+$htmlWc="<select name=wid onChange=\"postform(document.form1,'gmcharlog.php?a=wc')\"><option value=''></option>";
+foreach($arWc as $row)
+{
+	$selected=($wid==$row[id])?"SELECTED":"";
+	$htmlWc.="<option value='{$row[id]}' $selected>{$row[name]}</option>";
+}
+$htmlWc.="</select>";
+?>
+<html>
+<head>
+<title><?=BROWSER_TITLE?></title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="ga.css" rel="stylesheet" type="text/css"/>
+<!--
+<link rel="STYLESHEET" type="text/css" href="calendar.css">
+<script language="JavaScript" src="simplecalendar.js" type="text/javascript"></script>
+-->
+<script language="JavaScript" type="text/JavaScript">
+<!--
+function postform(form,url){
+	form.action=url;form.submit()
+}
+function postfind(){
+<?
+	if($_REQUEST[suspend]!='')
+	{
+		echo "postform(document.form1,'gmcharlog.php?page=2');";
+	}
+	else
+	{
+		echo "postform(document.form1,'gmcharlog.php?a=f');";
+	}
+?>
+}
+//-->
+</script>
+</head>
+<body>
+<form name="form1" method="post" action="">
+
+<h3>Player Activity Log</h3>
+(World Controller: <?=$htmlWc?>)
+<br><br>
+<table>
+<tr>
+	<td>Year</td>
+	<td>
+		<select name="year">
+		<?
+			for ($n=2003; $n<=2006; $n++)
+			{
+				if($n == $y)
+				{
+					echo "<option value=\"$n\" SELECTED>$n</option>";
+				}
+				else
+				{
+					echo "<option value=\"$n\">$n</option>";
+				}
+			}
+		?>
+		</select>
+	</td>
+</tr>
+<tr>
+	<td>Month</td>
+	<td>
+		<select name="month"><option value="">-Select-</option>
+		<?
+			for ($n=1; $n<=12; $n++)
+			{
+				if($n == $m)
+				{
+					echo "<option value=\"$n\" SELECTED>$n</option>";
+				}
+				else
+				{
+					echo "<option value=\"$n\">$n</option>";
+				}
+			}
+		?>
+		</select>
+	</td>
+</tr>
+<tr>
+	<td>Day</td>
+	<td>
+		<select name="day"><option value="">-Select-</option>
+		<?
+			for ($n=1; $n<=31; $n++)
+			{
+				if($n == $d)
+				{
+					echo "<option value=\"$n\" SELECTED>$n</option>";
+				}
+				else
+				{
+					echo "<option value=\"$n\">$n</option>";
+				}
+			}
+		?>
+		</select>
+	</td>
+</tr>
+<tr>
+	<td>Char ID</td>
+	<td>
+		<INPUT type="text" name="char_id" value="<?=$_REQUEST['char_id']?>" size=13>
+	</td>
+</tr>
+<tr>
+	<td>Script ID</td>
+	<td>
+		<INPUT type="text" name="script_id" value="<?=$_REQUEST['script_id']?>" size=8>
+	</td>
+</tr>
+<tr>
+	<td>Log ID</td>
+	<td>
+		<INPUT type="text" name="log_id" value="<?=$_REQUEST['log_id']?>" size=13>
+	</td>
+</tr>
+<tr>
+	<td>Param 0</td>
+	<td>
+		<INPUT type="text" name="param0" value="<?=$_REQUEST['param0']?>" size=13>
+	</td>
+	<td>&nbsp&nbsp&nbsp&nbsp&nbsp</td>
+	<td>Param 5</td>
+	<td>
+		<INPUT type="text" name="param5" value="<?=$_REQUEST['param5']?>" size=13>
+	</td>
+</tr>
+<tr>
+	<td>Param 1</td>
+	<td>
+		<INPUT type="text" name="param1" value="<?=$_REQUEST['param1']?>" size=13>
+	</td>
+	<td>&nbsp&nbsp&nbsp&nbsp&nbsp</td>
+	<td>Param 6</td>
+	<td>
+		<INPUT type="text" name="param6" value="<?=$_REQUEST['param6']?>" size=13>
+	</td>
+</tr>
+<tr>
+	<td>Param 2</td>
+	<td>
+		<INPUT type="text" name="param2" value="<?=$_REQUEST['param2']?>" size=13>
+	</td>
+	<td>&nbsp&nbsp&nbsp&nbsp&nbsp</td>
+	<td>Param 7</td>
+	<td>
+		<INPUT type="text" name="param7" value="<?=$_REQUEST['param7']?>" size=13>
+	</td>
+</tr>
+<tr>
+	<td>Param 3</td>
+	<td>
+		<INPUT type="text" name="param3" value="<?=$_REQUEST['param3']?>" size=13>
+	</td>
+	<td>&nbsp&nbsp&nbsp&nbsp&nbsp</td>
+	<td>Param 8</td>
+	<td>
+		<INPUT type="text" name="param8" value="<?=$_REQUEST['param8']?>" size=13>
+	</td>
+</tr>
+<tr>
+	<td>Param 4</td>
+	<td>
+		<INPUT type="text" name="param4" value="<?=$_REQUEST['param4']?>" size=13>
+	</td>
+	<td>&nbsp&nbsp&nbsp&nbsp&nbsp</td>
+	<td>Param 9</td>
+	<td>
+		<INPUT type="text" name="param9" value="<?=$_REQUEST['param9']?>" size=13>
+	</td>
+</tr>
+<tr>
+<td align="left" colspan=5><input type="submit" value="Search"></td>
+</tr>
+</table>
+
+
+
+<p>
+<?=$hd?>
+<table border=1 cellspacing=0>
+	<?=$html?>
+</table>
+<?
+if($total_row>0) echo "Found $total_row record(s). Page <input name=page value='$page' size=3>/$total_pg <input type=button value='Go' onclick='postfind()'> <a href='javascript:document.form1.page.value--;postfind()'>Previous</a> <a href='javascript:document.form1.page.value++;postfind()'>Next</a>";
+?>
+</form>
+<!--
+/*
+Value=<?=$testvalue?>
+<br>
+Value=<?=$testvalue1?>
+<br>
+Value=<?=$testvalue2?>
+*/
+-->
+<script language="JavaScript" type="text/javascript" src="wz_tooltip.js"></script>
+</body>
+</html>

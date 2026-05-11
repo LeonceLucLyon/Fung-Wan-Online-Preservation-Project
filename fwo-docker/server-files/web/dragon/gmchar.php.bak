@@ -1,0 +1,301 @@
+<?php
+require('auth.php');
+$rpp  = 25;
+$offset = 0;
+
+require_once('dbGmAdm.php');
+mysql_select_db($database_dbGmAdm, $dbGmAdm);
+
+$wid=$HTTP_POST_VARS[wid];
+if($HTTP_GET_VARS[wid])$wid=$HTTP_GET_VARS[wid];
+if($wid=="")
+{
+	$wid=$HTTP_SESSION_VARS['wid'];
+}
+else
+{
+	$HTTP_SESSION_VARS['wid']=$wid;
+}
+
+if(!has_perm($HTTP_SESSION_VARS['userid'], $wid, "gmchar", "") )
+{
+	$HTTP_SESSION_VARS['wid'] = '';
+	die("Access denied.");
+}
+
+$dbWc = NULL;
+
+if($wid)
+{
+	$rsSvr = mysql_query("SELECT * FROM gm_server WHERE id='{$wid}'", $dbGmAdm) or die(mysql_error($dbGmAdm));
+	$row_rsSvr=mysql_fetch_assoc($rsSvr) or die("Invalid worldcontroller");
+	mysql_free_result($rsSvr);
+	$dbWc = mysql_pconnect($row_rsSvr[ip],$row_rsSvr[dbuser],$row_rsSvr[dbpasswd]);
+	if(!$dbWc)
+	{
+		$HTTP_SESSION_VARS['wid'] = "";
+		echo "
+			<script>
+			function reload(){location.href='{$HTTP_SERVER_VARS[REQUEST_URI]}'}
+			setTimeout(reload, 3000)
+			</script>
+			<p><font color=red>Page will be redirected in 3 seconds.</p>
+		";
+		die(mysql_error());
+	}
+	mysql_select_db($row_rsSvr[db], $dbWc);
+}
+
+switch($HTTP_GET_VARS['a'])
+{
+	case 'wc':
+		//if($HTTP_POST_VARS[wid]!='')$HTTP_SESSION_VARS['wc']=$HTTP_POST_VARS[wid];
+		break;
+	case 'f':
+		//$cond_charid = $HTTP_POST_VARS[charid_0]!=""? " AND CharID LIKE \"$HTTP_POST_VARS[charid_0]\"":"";
+		//$cond_charnm = $HTTP_POST_VARS[charnm_0]!=""? " AND CharacterName LIKE \"$HTTP_POST_VARS[charnm_0]\"":"";
+		$cond_charid = $_REQUEST[charid_0]!=""? " AND CharID LIKE \"$_REQUEST[charid_0]\"":"";
+		$cond_LockOutTime = $_REQUEST[suspend]!=""? " AND LockOutTime > 0":"";
+		if($HTTP_POST_VARS[charnm_0]!="")
+		{
+			if(0)
+			{
+				$character_name = str_repeat("00", 40);
+				$hex_charnm = hexstring(U8toU16(stripslashes($HTTP_POST_VARS[charnm_0])));
+				$character_name = substr_replace($character_name, $hex_charnm, 0 , strlen($hex_charnm ));
+				$cond_charnm = " AND (STRCMP(CharacterName, 0x{$character_name})=0 OR STRCMP(CharacterName, 0x{$hex_charnm}0000)=0)";
+				//OR CharacterName LIKE \"". addslashes(U8toU16($HTTP_POST_VARS[charnm_0])) ."%\")";
+			}
+
+			$hex_charnm = hexstring(U8toU16(stripslashes($HTTP_POST_VARS[charnm_0])));
+			$cond_charnm = " AND LOCATE(0x{$hex_charnm}, CharacterName)=1";
+		}
+
+		$cond_usernm = $HTTP_POST_VARS[usernm_0]!=""? " AND Username LIKE \"$HTTP_POST_VARS[usernm_0]\"":"";
+		$query_rs = "SELECT COUNT(*) FROM pcharacter WHERE 1 $cond_charid $cond_charnm $cond_usernm $cond_LockOutTime";
+		$rs = mysql_query($query_rs, $dbWc) or die(mysql_error($dbWc));
+		list($total_row) = mysql_fetch_array($rs);
+		mysql_free_result($rs);
+
+		$page = (int) $_REQUEST['page'];
+		if($page < 1) $page = 1;
+		$total_pg = ceil($total_row / $rpp);
+		if($page > $total_pg) $page = 1;
+		$offset = ($page - 1) * $rpp;
+
+		$query_rs = "SELECT * FROM pcharacter WHERE 1 $cond_charid $cond_charnm $cond_usernm $cond_LockOutTime ORDER BY CharID LIMIT $offset, $rpp";
+		$rs = mysql_query($query_rs, $dbWc) or die(mysql_error($dbWc));
+		break;
+	case 'k':
+		if($dbWc)
+		{
+			$rs = mysql_query("Select Address FROm pcharacter p, scene s WHERE p.SceneID=s.SceneID AND p.CharID='{$HTTP_GET_VARS[i]}' ", $dbWc) or die(mysql_error($dbWc));
+			list($zs) = mysql_fetch_row($rs);
+			mysql_free_result($rs);
+
+			$shell_cmd = "ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@$zs sudo -u $zs_username $SETCMD 48 {$HTTP_GET_VARS[i]}";
+			unset($shell_out);
+			exec($shell_cmd, $shell_out, $ret);
+			$after = join("\n", $shell_out);
+			if($ret == 255){
+				die("remote server command not setup");
+			}
+			act_log(
+				array(
+					"server"=>"$zs",
+					"act"=>"kick pchar",
+					"cmd"=>$shell_cmd,
+					"after"=>$after
+				)
+			);
+			//mysql_query("DELETE FROM authenticated WHERE CharID='{$HTTP_GET_VARS[i]}';", $dbWc);
+
+			//DELETE FROM authorized WHERE Username='{$account}' AND SvcLevel=2;
+		}
+		break;
+	case 'fk':
+		if($dbWc)
+		{
+			$rs = mysql_query("Select Address FROM pcharacter p, scene s WHERE p.SceneID=s.SceneID AND p.CharID='{$HTTP_GET_VARS[i]}' ", $dbWc) or die(mysql_error($dbWc));
+			list($zs) = mysql_fetch_row($rs);
+			mysql_free_result($rs);
+
+			$shell_cmd = "ssh -o 'StrictHostKeyChecking=no' -i $rsa_file $remote_username@$zs sudo -u $zs_username $SETCMD 48 {$HTTP_GET_VARS[i]}";
+			unset($shell_out);
+			exec($shell_cmd, $shell_out, $ret);
+			$after = join("\n", $shell_out);
+			if($ret == 255){
+				die("remote server command not setup");
+			}
+			act_log(
+				array(
+					"server"=>"$zs",
+					"act"=>"force kick pchar",
+					"cmd"=>$shell_cmd,
+					"after"=>$after
+				)
+			);
+			mysql_query("DELETE FROM authenticated WHERE CharID='{$HTTP_GET_VARS[i]}';", $dbWc);
+
+			$rsAs = mysql_query("SELECT * FROM gm_server WHERE id='{$row_rsSvr[authsys]}'", $dbGmAdm) or die(mysql_error($dbGmAdm));
+			$row_rsAs = mysql_fetch_assoc($rsAs) or die("invalid Authsys");
+			mysql_free_result($rsAs);
+
+			$dbAs = mysql_pconnect($row_rsAs[ip],$row_rsAs[dbuser],$row_rsAs[dbpasswd]) or die(mysql_error());
+			mysql_select_db($row_rsAs[db], $dbAs);
+			mysql_query("DELETE FROM authorized WHERE Username='{$HTTP_GET_VARS[n]}'", $dbAs) or die(mysql_error($dbAs));
+		}
+		break;
+}
+//echo("sql = ".$query_rs."<br>");
+//echo("version =".$row_rsSvr[version]."<br>");
+//echo("server IP = ".$wc_ip."<br>");
+$arWc = get_accessible_server($HTTP_SESSION_VARS['userid'], 'wc');
+
+$htmlWc="<select name=wid onChange=\"postform(document.form1,'gmchar.php?a=wc')\"><option value=''></option>";
+foreach($arWc as $row)
+{
+	$selected=($wid==$row[id])?"SELECTED":"";
+	$htmlWc.="<option value='{$row[id]}' $selected>{$row[name]}</option>";
+}
+$htmlWc.="</select>";
+
+?>
+<html>
+<head>
+<title><?=BROWSER_TITLE?></title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="ga.css" rel="stylesheet" type="text/css"/>
+<script language="JavaScript" type="text/JavaScript">
+<!--
+function postform(form,url){
+	form.action=url;form.submit()
+}
+function postfind(){
+<?
+	if($_REQUEST[suspend]!='')
+	{
+		echo "postform(document.form1,'gmchar.php?a=f&suspend=1');";
+	}
+	else
+	{
+		echo "postform(document.form1,'gmchar.php?a=f');";
+	}
+?>
+}
+//-->
+</script>
+</head>
+<body>
+<form name="form1" method="post" action="">
+<h3 style="margin-bottom:0">Player Character</h3>(World Controller: <?=$htmlWc?>)
+<br><br>
+ <?php
+if($wid!="")
+{
+?>
+<table border="0">
+	<tr>
+		<td>CharID</td>
+		<td>CharacterName</td>
+		<td>Account Name</td>
+		<!--<td>Slot</td>-->
+		<td>Logon</td>
+		<td>Suspended Until</td>
+		<td>Action</td>
+	</tr>
+	<tr bordercolor="#CCCCCC" bgcolor="#FFFF66">
+		<td><input name="charid_0" type="text" id="charid_02" size="12" maxlength="10" value="<?=htmlspecialchars(stripslashes($HTTP_POST_VARS[charid_0]))?>"></td>
+		<td><input name="charnm_0" type="text" id="charnm_0" size="18" maxlength="20" value="<?=htmlspecialchars(stripslashes($HTTP_POST_VARS[charnm_0]))?>"></td>
+		<td><input name="usernm_0" type="text" id="usernm_0" maxlength="20" value="<?=htmlspecialchars(stripslashes($HTTP_POST_VARS[usernm_0]))?>"></td>
+		<td>&nbsp;</td>
+		<!--<td>&nbsp;</td>-->
+		<td><nobr>yymmdd hhmm</nobr></td>
+		<td>
+			<input type="button" value="Find" onClick="if(false&&document.form1.charid_0.value+document.form1.charnm_0.value+document.form1.usernm_0.value==''){alert('Please enter search criteria.');return 0}postform(document.form1,'gmchar.php?a=f')">
+			<input type="button" value="Find suspended character" onClick="postform(document.form1,'gmchar.php?a=f&suspend=1')">
+		</td>
+	</tr>
+	<?
+	if($HTTP_GET_VARS["a"]=="f")
+	{
+		if(mysql_num_rows($rs) > 0)
+		{
+			while($row=mysql_fetch_assoc($rs))
+			{
+				$charnm=htmlspecialchars(U16btoU8str($row["CharacterName"]));
+				$sql ="SELECT ClientAddr FROM authenticated WHERE CharID='{$row[CharID]}';";
+				$rs_logon = mysql_query($sql, $dbWc) or die(mysql_error($dbWc));
+				$is_logon=mysql_num_rows($rs_logon);
+				if($is_logon)
+				{
+					list($client_ip) = mysql_fetch_row($rs_logon);
+					$client_ip = long2ip(- 4294967295 - 1 + $client_ip);
+					$client_ip = split("\.", $client_ip);
+					$final_ip = "IP: $client_ip[3].$client_ip[2].$client_ip[1].$client_ip[0]";
+				}
+				else
+				{
+					$final_ip = "";
+				}
+				$login_status = ($is_logon)?"<span style='background-color:red;color:white'><nobr>yes<input type=button value=kick onclick=\"if(confirm('kick character?'))postform(document.form1,'gmchar.php?a=k&i={$row[CharID]}')\"> <input type=button value=\"Force kick\" onclick=\"if(confirm('Please use the \\'normal\\' kick function to kick players from the game. This function is reserved for \\'abnormal\\' condition, usually associated with the server failure(i.e. server crashes).\\nContinue to force kick?'))postform(document.form1,'gmchar.php?a=fk&i={$row[CharID]}&n=" . urlencode($row[Username]) . "')\"></nobr><br>$final_ip</span>":"no";
+				mysql_free_result($rs_logon);
+				$lockout_status = ($row[LockOutTime] > 0) ? "<a href=\"barpc.php?wid=$wid&i=$row[CharID]\" target=\"_blank\" onmouseover=\"return escape('suspend/unsuspend character.')\">" . date("y/m/d H:i", $row[LockOutTime]) . "</a>" : "[<a href=\"barpc.php?wid=$wid&i=$row[CharID]\" target=\"_blank\" onmouseover=\"return escape('suspend character.')\">set</a>]";
+				$char_id = $row[CharID];
+			?>
+	<tr onmouseover="this.className='hl'" onmouseout="this.className=''">
+		<td><input name="charid_<?=$char_id?>" type="hidden" value="<?=$char_id?>" readonly="yes"><?=$char_id?></td>
+		<td><input name="charnm_<?=$char_id ?>" type="hidden" value="<?=$charnm?>" readonly="yes"><?=$charnm?> </td>
+		<td><input name="usernm_<?=$char_id?>" type="hidden" value="<?=htmlspecialchars($row[Username])?>" readonly="yes"><?=htmlspecialchars($row[Username])?></td>
+		<!--<td><input name="slot_<?=$char_id?>" type="hidden" value="<?=$row[SlotID]?>"><?=$row[SlotID]?></td>-->
+		<td><?=$login_status?></td>
+		<td><?=$lockout_status?></td>
+		<td>
+			<nobr>
+			<a href="pcharacter.php?i=<?=$char_id?>&wid=<?=$wid?>" target="p<?=$char_id?>" onmouseover="return escape('set character name, appearance, location.')">Character</a>
+			<a href="pcharstat.php?i=<?=$char_id?>&wid=<?=$wid?>" target="p<?=$char_id?>"  onmouseover="return escape('set character stats, clan.')">Stat</a>
+			<a href="charinv.php?f=<?=$char_id?>&wid=<?=$wid?>" target="p<?=$char_id?>" onmouseover="return escape('set character inventory.')">Inventory</a>
+		<?if(($row_rsSvr[version]  == '1.2_OMI') or ($row_rsSvr[version]  == '1.2')){?>
+			<a href="charstash.php?f=<?=$char_id?>&wid=<?=$wid?>" target="p<?=$char_id?>" onmouseover="return escape('set character stash.')">Stash</a>
+		<?}?>
+
+			<a href="powerlist.php?f=<?=$char_id?>&wid=<?=$wid?>" target="p<?=$char_id?>" onmouseover="return escape('set character power list.')">Power</a>
+			<a href="skilllist.php?f=<?=$char_id?>&wid=<?=$wid?>" target="p<?=$char_id?>" onmouseover="return escape('set character skill list.')">Skill</a>
+			<a href="effectlist.php?f=<?=$char_id?>&wid=<?=$wid?>" target="p<?=$char_id?>" onmouseover="return escape('set character effect list.')">Effect</a>
+			<a href="stancelist.php?f=<?=$char_id?>&wid=<?=$wid?>" target="p<?=$char_id?>" onmouseover="return escape('set character stance list.')">Stance</a>
+			<a href="questdata.php?i=<?=$char_id?>&wid=<?=$wid?>" target="p<?=$char_id?>" onmouseover="return escape('set character quest state.')">Quest</a>
+			<a href="logchat.php?a=s&i=<?=$char_id?>&wid=<?=$wid?>" target="p<?=$char_id?>" onmouseover="return escape('record character chat.')">LogChat</a>
+			</nobr>
+
+		</td>
+	</tr>
+			<?
+			}//end while
+		}//end if(mysql_num_rows($rs) > 0)
+		else
+		{
+			echo "<tr><td colspan=7><font color=red><b>No matched queries.</b></font></td></tr>";
+		}
+	}// end if($HTTP_GET_VARS["a"]=="f")
+	echo "</table>";
+	if($total_row>0) echo "Found $total_row record(s). Page <input name=page value='$page' size=3>/$total_pg <input type=button value='Go' onclick='postfind()'> <a href='javascript:document.form1.page.value--;postfind()'>Previous</a> <a href='javascript:document.form1.page.value++;postfind()'>Next</a>";
+?>
+  <hr>
+  <br><a href="logchat.php?wid=<?=$wid?>" onmouseover="return escape('view logged player\'s chat.')">Access Chat Log</a>
+  <br><a href="findchar.php?wid=<?=$wid?>" onmouseover="return escape('find character by creation date, item, rank.')">Advanced Character Search</a>
+  <br><a href="banname.php?wid=<?=$wid?>" onmouseover="return escape('add disallowed name to be used as character name or guild name.')">Ban Name For Character And Guild</a>
+<?
+if(!$readonly_gmdata)
+{
+	echo "<br><a href=\"clonechar.php\" target='_clone' onmouseover=\"return escape('copy one character appearance, stats and item to another character.')\">Duplicate Character</a>";
+}
+?>
+  <br><a href="findcheat.php?wid=<?=$wid?>" onmouseover="return escape('find character with unmatched stat points.')">Find Cheat Character(s)</a>
+  <br><a href="resetquest.php" onmouseover="return escape('reset quest state of all players.')">Reset Quest for All Players</a>
+<?
+}//end if($wid!="")
+?>
+</form>
+<script language="JavaScript" type="text/javascript" src="wz_tooltip.js"></script>
+</body>
+</html>

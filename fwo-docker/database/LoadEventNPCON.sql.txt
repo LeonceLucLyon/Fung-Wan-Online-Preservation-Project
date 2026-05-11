@@ -1,0 +1,300 @@
+/* Saving Blacksmith Te */
+update uniqueitem set CharID=80003 where CharID=0 and ItemID>=6815769 and ItemID<=6815777;
+
+/*Golden Silk Armor */
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `AttribID`='413' WHERE  `SpawnPtID`=10434;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `AttribID`='414' WHERE  `SpawnPtID`=10435;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10434;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10435;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10503;
+update uniqueitem set CharID=80003 where CharID=0 and ItemID>=6815749 and ItemID<=6815768;
+
+/* Iris Saber */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10414;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10453;
+
+
+
+/* 5 Great Weapons Tournament */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10632;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10633;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10634;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10635;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10636;
+
+/* In Search of Mud Buddah */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10533;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10534;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10529;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10535;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10542;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10536;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10541;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10539;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10530;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10537;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10531;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10540;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10538;
+
+/* Bu Shen Bounty */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10563;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10543;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10544;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10545;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10546;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10547;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10548;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10549;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10550;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10551;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10552;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10553;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10554;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10555;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10556;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10557;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10558;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10559;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10560;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10561;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10562;
+
+/* Wave's Evil Plan */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10564;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10565;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10566;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10567;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10568;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10569;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10570;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10571;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10572;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10573;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10574;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10575;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10609;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10576;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10577;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10578;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10579;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10580;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10581;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10582;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10583;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10584;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10585;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10620;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10621;
+
+/* Missing Scroll of Supreme Sword Clan */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10586;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10587;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10588;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10589;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10590;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10591;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10592;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10593;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10594;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10595;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10622;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10623;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10624;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10625;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10626;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10627;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10628;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10629;
+
+/* Missing Matchless Sword */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10610;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10611;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10612;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10613;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10614;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10615;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10616;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10617;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10618;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10619;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10597;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='0' WHERE  `SpawnPtID`=10631;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10600;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='0' WHERE  `SpawnPtID`=10598;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='0' WHERE  `SpawnPtID`=10601;
+
+/* Return of The Fire Kirin Sword */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=455;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=419;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=418;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=420;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10500;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10841;
+
+/* The Demon Wolf Challenge */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10602;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10603;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10604;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10605;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10606;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10607;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10608;
+
+/* Wu Ming's 3 Servants */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10639;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10640;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10643;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=106410;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10642;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10637;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10638;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10644;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10645;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10646;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10647;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10840;
+
+/* Bloom of The Magical Flower */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10648;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10649;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10650;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10651;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10652;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10653;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10654;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10655;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10656;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10657;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10658;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10659;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10660;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10661;
+
+/* Bux Mercy */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10662;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10663;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10664;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10665;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10666;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10667;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10668;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10669;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10670;
+
+/* Assasinate the Tian Xia 12 Assasains */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10672;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10673;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10674;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10675;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10676;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10677;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10678;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10679;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10680;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10681;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10682;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10683;
+
+/* The Legends of Shen Ling 23 */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10684;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10693;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10686;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10694;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10695;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10689;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10688;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='0' WHERE  `SpawnPtID`=1071;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='0' WHERE  `SpawnPtID`=1073;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='0' WHERE  `SpawnPtID`=1074;
+UPDATE `fwworlddevdb`.`npcattribdyn` SET `IsDead`='0' WHERE  `AttribID`=701;
+
+/* Awakening of the Celestial Dragon */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10724;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10725;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10726;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10727;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10728;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10729;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10730;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10731;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10732;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10733;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='0' WHERE  `SpawnPtID`=12256;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='0' WHERE  `SpawnPtID`=12259;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='0' WHERE  `SpawnPtID`=12260;
+
+/* Birth of The First Sword */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10734;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10735;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10736;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10737;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10738;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10739;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10740;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10741;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10742;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10743;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10744;
+
+/* The Phoenix Creek Besiege */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10814;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10816;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10817;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10818;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10819;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10820;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10821;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10822;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10823;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10824;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10825;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10815;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10826;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10827;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10828;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10829;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10830;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10831;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10832;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10838;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10839;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10833;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10834;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10835;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10836;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10837;
+
+/* The Seven Persian Tricksters */
+
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10800;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10801;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10802;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10803;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10804;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10805;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10806;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10807;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10808;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10813;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10809;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10810;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10811;
+UPDATE `fwworlddevdb`.`spawnptdyn` SET `IsOn`='1' WHERE  `SpawnPtID`=10812;
