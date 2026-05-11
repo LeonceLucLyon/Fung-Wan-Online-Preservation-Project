@@ -17,6 +17,9 @@ This is a preservation project. The original game went offline; this brings it b
 
    Save it to the same folder as `install.bat` (i.e. inside the extracted project root).
 
+3.  **Client Link** - https://drive.google.com/file/d/1Na-hlwlR3P5lA0RJMA24HlSmaMLipwKz/view?usp=sharing
+
+	Save it where ever you want, and run either 32bit or 64bit launcher.
 ### Install
 
 1. Extract this project to a folder. `C:\fwo-docker\` is recommended.
