@@ -9,7 +9,7 @@ REM   2. Loads pre-built Docker images from BACKUP_docker_images.tar (if present
 REM      OR builds locally from Dockerfiles (requires internet, may fail if
 REM      vettadock/mysql-old:4.1 is no longer hosted)
 REM   3. Brings up fwo-db
-REM   4. Restores BACKUP_v14_complete.sql (the gold standard preservation snapshot)
+REM   4. Restores BACKUP_v15_complete.sql (the gold standard preservation snapshot)
 REM   5. Brings up fwo-server
 REM   6. Optionally prompts for initial XP rate and level cap
 REM
@@ -20,7 +20,7 @@ setlocal enabledelayedexpansion
 
 set DB_PASSWORD=ejair0xx
 set CONTAINER=fwo-db
-set BACKUP_FILE=%~dp0database\BACKUP_v14_complete.sql
+set BACKUP_FILE=%~dp0database\BACKUP_v15_complete.sql
 set IMAGE_TAR=%~dp0BACKUP_docker_images.tar
 
 echo.
@@ -57,7 +57,7 @@ REM ----- 2. Verify backup file exists -----
 echo [2/6] Checking gold standard backup...
 if not exist "%BACKUP_FILE%" (
     echo.
-    echo ERROR: BACKUP_v14_complete.sql not found at:
+    echo ERROR: BACKUP_v15_complete.sql not found at:
     echo   %BACKUP_FILE%
     echo.
     echo Make sure the database\ folder is intact and contains the backup file.
@@ -122,7 +122,7 @@ goto wait_loop
 echo       fwo-db is up.
 echo.
 
-REM ----- 5. Restore BACKUP_v14_complete.sql -----
+REM ----- 5. Restore BACKUP_v15_complete.sql -----
 echo [5/6] Restoring gold standard database snapshot...
 echo       (this takes about a minute on a typical machine)
 

@@ -1,0 +1,38 @@
+-- =============================================================================
+-- activate_all_events.sql  -  force EVERY game event (and its quests) ACTIVE
+-- =============================================================================
+-- In FWO, an event's `Status` field gates whether its scripts run. The engine
+-- treats Status = 2 as "active" (verified: event-gated scripts check
+-- `GetGameEventStatus(id) == 2` -- e.g. the event-21 vendor scripts and the
+-- event-2 checks in 80229/80230). Status = 0 is off; 1 is NOT recognized.
+--
+-- This sets every real event to active in one statement. Pure UPDATE, no
+-- INSERT/CREATE, fully idempotent and safe to run on every startup.
+--
+--   docker exec fwo-db mysql -uroot -pejair0xx fwworlddevdb < activate_all_events.sql
+--
+-- Add its filename to start-fwo.sh / EVENT_SCRIPTS to re-arm on every boot.
+-- =============================================================================
+
+-- IMPORTANT: IDs 989-999 are EXCLUDED. These are value-holders, not on/off
+-- flags -- Status carries a number, not "active". Setting them to 2 would
+-- silently switch features on at value 2:
+--   999 = Hero mob-kill multiplier        (-> 2x hero rate)
+--   998 = Gold modifier                   (-> +mobLevel*2 gold/kill)
+--   993 = Slot2 rare-pool drop chance      (-> 2% per kill)
+--   992 = Slot3 rare-pool drop chance      (-> 2% per kill)
+--   991 = Slot4 rare-pool drop chance      (-> 2% per kill)
+--   990 = Slot5 rare-pool drop chance      (-> 2% per kill)
+--   989 = Slot6 rare-pool drop chance      (-> 2% per kill)
+-- Tune those with ServerConfiguration.bat, never here. If you add more dials
+-- later, add their IDs to the exclusion list below.
+UPDATE gameevent SET Status = 2 WHERE ID NOT IN (989, 990, 991, 992, 993, 998, 999);
+
+-- ---------------------------------------------------------------------------
+-- OPTIONAL: make date-gated spawns (mainly the festivals) appear year-round.
+-- Festival NPCs are tied to spawn points with calendar windows, so even with
+-- the event active they may only spawn in-season. Uncommenting this strips
+-- those time/date gates. Broad -- back up `spawnpt` first if you care about
+-- seasonal behavior.
+-- ---------------------------------------------------------------------------
+-- UPDATE spawnpt SET UseTime = 0, UseDate = 0, UseRangeHour = 0, UseRangeDate = 0;
