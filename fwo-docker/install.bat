@@ -170,8 +170,7 @@ echo   admin / fwopass        ^(GM character^)
 echo   Account1..Account100 / fwopass
 echo.
 echo Next steps:
-echo   - Optional: customize XP rate -^>  Set_Custom_EXP_Rate.bat
-echo   - Optional: customize level cap -^>  Set_Custom_Level_Cap.bat
+echo   - Optional: tune the server -^>  ServerConfiguration.bat
 echo   - Launch the FWO client and connect to 127.0.0.1
 echo.
 echo Useful commands:
