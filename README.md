@@ -13,13 +13,10 @@ This is a preservation project. The original game went offline; this brings it b
 1. **Docker Desktop** for Windows — [download here](https://www.docker.com/products/docker-desktop/). Install, launch it once, wait for it to finish starting.
 
 2. **The Docker images tarball** — `BACKUP_docker_images.tar` (~270MB). Too large for GitHub, so it lives at:
-   - **[https://drive.google.com/file/d/1IwYE4lFkJpo3u1hF92cVEbQlVuef-_Mp/view?usp=sharing]**
+   - **[Download link goes here]**
 
    Save it to the same folder as `install.bat` (i.e. inside the extracted project root).
 
-3.  **Client Link** - https://drive.google.com/file/d/1Na-hlwlR3P5lA0RJMA24HlSmaMLipwKz/view?usp=sharing
-
-	Save it where ever you want, and run either 32bit or 64bit launcher.
 ### Install
 
 1. Extract this project to a folder. `C:\fwo-docker\` is recommended.
@@ -135,9 +132,9 @@ Ensure WSL2 is enabled, Hyper-V is enabled, and your Windows version is 10 build
 
 - **fwo-db**: MySQL 4.1.22 in a container. Inherits from `vettadock/mysql-old:4.1` with FWO-specific config (skip-symbolic-links, old-passwords, query log enabled). The original FWO server binaries are linked against `libmysqlclient.so.10` and only speak the pre-MySQL-4.1 password protocol — running on MySQL 5.5+ caused crashes on inventory queries.
 
-- **fwo-server**: Linux container running the four original FWO server daemons under supervisord (authsys port 7778, wctrlr port 8888, zoneserver UDP 9999, logserver port 5961). Auto-runs idempotent maintenance scripts at startup including `auto_heal_clans.sql` which keeps clan recruiters working.
+- **fwo-server**: Linux container running the four original FWO server daemons under supervisord (authsys port 7778, wctrlr port 8888, zoneserver UDP 9999, logserver port 5961). Auto-runs idempotent maintenance scripts at startup including `auto_heal_clans_v2.sql`, which keeps the clan system consistent — village recruiter enrollment, Clan Advisor access, and correct NPC-vs-player leadership.
 
-- **Database state**: Single-file `BACKUP_v14_complete.sql` includes all four FWO databases (fwsubdevdb, fwworlddevdb, fwcharlog, gmadm) with all schema modifications, MERGE tables, MOTD, unlocked items, and per-character XP baseline already baked in.
+- **Database state**: Single-file `BACKUP_v15_complete.sql` is a full snapshot of the FWO databases (fwsubdevdb, fwworlddevdb, fwcharlog, gmadm) with all schema modifications, MERGE tables, MOTD, unlocked items, and per-character XP baseline baked in. v15 additionally bakes in the rare loot-pool system, hero/gold kill rewards, the Golden Silk legendary quest fix, the clan-leadership refactor, and all game events set active.
 
 ---
 
