@@ -133,7 +133,7 @@ Ensure WSL2 is enabled, Hyper-V is enabled, and your Windows version is 10 build
 
 - **fwo-server**: Linux container running the four original FWO server daemons under supervisord (authsys port 7778, wctrlr port 8888, zoneserver UDP 9999, logserver port 5961). Auto-runs idempotent maintenance scripts at startup including `auto_heal_clans_v2.sql`, which keeps the clan system consistent — village recruiter enrollment, Clan Advisor access, and correct NPC-vs-player leadership.
 
-- **Database state**: Single-file `BACKUP_v17_complete.sql` is a full snapshot of the FWO databases (fwsubdevdb, fwworlddevdb, fwcharlog, gmadm) with all schema modifications, MERGE tables, MOTD, unlocked items, and per-character XP baseline baked in. v15 additionally bakes in the rare loot-pool system, hero/gold kill rewards, the Golden Silk legendary quest fix, the clan-leadership refactor, and all game events set active.
+- **Database state**: Single-file `BACKUP_v17_complete.sql` is a full snapshot of the FWO databases (fwsubdevdb, fwworlddevdb, fwcharlog, gmadm) with all schema modifications, MERGE tables, MOTD, unlocked items, and per-character XP baseline baked in. v17 additionally bakes in the rare loot-pool system, hero/gold kill rewards, the Golden Silk legendary quest fix, the clan-leadership refactor, and all game events set active.
 
 ---
 
