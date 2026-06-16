@@ -46,15 +46,14 @@ The admin account is `admin` with password `fwopass`. The admin account has the 
 
 ## Optional Customization
 
-After install, run any of these to tweak the server. They prompt for a value and apply it.
+After install, run either of these to tweak the server.
 
 | Tool | What it does |
 |---|---|
-| `Set_Custom_EXP_Rate.bat` | Sets NPC kill XP multiplier (1-100x). Always re-applied from baseline so rates don't compound. |
-| `Set_Custom_Level_Cap.bat` | Caps maximum character level (1-221). Existing characters above the cap get reset to that level with the matching XP. |
+| `ServerConfiguration.bat` | Central config menu: hero-point multiplier, gold-drop bonus, the five rare loot-pool drop rates, NPC-kill XP rate (1-100x), and level cap (1-221). |
 | `fwo_admin.py` | GM-only forge tool. Runs as a local webpage. Bypasses in-game restrictions to forge any weapon with any 5 components. **Requires Python 3 — see Forge Tool section below.** |
 
-All three require the server to be restarted after use:
+Restart the server after use for changes to take effect:
 ```cmd
 docker-compose restart fwo-server
 ```
