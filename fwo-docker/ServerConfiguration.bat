@@ -6,6 +6,11 @@ REM  FWO Server Configuration - loot / economy / progression dials
 REM  Changes are written to the DB immediately but take effect in-game only
 REM  after you choose [S] Save & Restart (the engine caches data at boot).
 REM  Run this from your C:\fwo-docker folder (same as your other bats).
+REM
+REM  Level cap lives in the `Caps` table (CapType rows). The engine enforces the
+REM  lower row, so this tool sets every CapType row to your chosen value. The XP
+REM  curve in `leveladv` already runs to 221, so raising the cap lets players
+REM  actually grind to it.
 REM ============================================================================
 
 :menu
@@ -64,10 +69,10 @@ goto :eof
 
 :setxp
 echo.
-set /p rate="Enter XP rate (1-100, 1 = original): "
+set /p rate="Enter XP rate (1-10000, 1 = original): "
 echo !rate!| findstr /r "^[1-9][0-9]*$" >nul
-if errorlevel 1 ( echo   Invalid - whole numbers 1-100 only. & pause & goto :eof )
-if !rate! gtr 100 ( echo   Maximum is 100. & pause & goto :eof )
+if errorlevel 1 ( echo   Invalid - whole numbers 1-10000 only. & pause & goto :eof )
+if !rate! gtr 10000 ( echo   Maximum is 10000. & pause & goto :eof )
 docker exec fwo-db mysql -uroot -pejair0xx fwworlddevdb -e "UPDATE npcattrib n JOIN xp_baseline b ON n.AttribID=b.AttribID SET n.XPperHP = b.XPperHP * !rate!, n.XPValue = b.XPValue * !rate!;"
 if errorlevel 1 ( echo   DB update FAILED - is the server running? & pause & goto :eof )
 echo   XP rate set to !rate!x.   ( applies after Save ^& Restart )
@@ -76,13 +81,18 @@ goto :eof
 
 :setcap
 echo.
-echo   NOTE: any character above the new cap is reset to exactly the cap.
+echo   Sets the server level cap in the Caps table. leveladv has XP data up to 221.
+echo   NOTE: any character ABOVE the new cap is pulled down to exactly the cap.
 set /p cap="Enter level cap (1-221): "
 echo !cap!| findstr /r "^[1-9][0-9]*$" >nul
 if errorlevel 1 ( echo   Invalid - whole numbers 1-221 only. & pause & goto :eof )
-if !cap! gtr 221 ( echo   Maximum is 221. & pause & goto :eof )
+if !cap! gtr 221 ( echo   Maximum is 221 ^(leveladv max^). & pause & goto :eof )
+REM Set the real enforced cap. Every CapType row is set to the same value so the
+REM cap applies no matter which row the engine reads (it enforces the lower one).
+docker exec fwo-db mysql -uroot -pejair0xx fwworlddevdb -e "UPDATE Caps SET Level=!cap!;"
+if errorlevel 1 ( echo   DB update FAILED - is the fwo-db container running? & pause & goto :eof )
+REM Pull any characters above the new cap down to it (a no-op when raising the cap).
 docker exec fwo-db mysql -uroot -pejair0xx fwworlddevdb -e "UPDATE pcharstats_all SET Experience = (SELECT XP FROM leveladv WHERE Level=!cap!), Level=!cap! WHERE Level > !cap!;"
-if errorlevel 1 ( echo   DB update FAILED - is the server running? & pause & goto :eof )
 echo   Level cap set to !cap!.   ( applies after Save ^& Restart )
 pause
 goto :eof
@@ -90,7 +100,8 @@ goto :eof
 :show
 docker exec fwo-db mysql -uroot -pejair0xx fwworlddevdb -N -e "SELECT CONCAT('   [',ID,'] ',Description,' = ',Status) FROM gameevent WHERE ID IN (999,998,993,992,991,990,989) ORDER BY ID DESC;" 2>nul
 docker exec fwo-db mysql -uroot -pejair0xx fwworlddevdb -N -e "SELECT CONCAT('   [XP ] NPC xp rate = ',ROUND(n.XPValue/b.XPValue),'x') FROM npcattrib n JOIN xp_baseline b ON n.AttribID=b.AttribID WHERE b.XPValue>0 LIMIT 1;" 2>nul
-docker exec fwo-db mysql -uroot -pejair0xx fwworlddevdb -N -e "SELECT CONCAT('   [LVL] highest character level = ',IFNULL(MAX(Level),0)) FROM pcharstats_all;" 2>nul
+docker exec fwo-db mysql -uroot -pejair0xx fwworlddevdb -N -e "SELECT CONCAT('   [LVL] level cap = ',MIN(Level)) FROM Caps;" 2>nul
+docker exec fwo-db mysql -uroot -pejair0xx fwworlddevdb -N -e "SELECT CONCAT('   [chr] highest character = ',IFNULL(MAX(Level),0)) FROM pcharstats_all;" 2>nul
 goto :eof
 
 :restart
