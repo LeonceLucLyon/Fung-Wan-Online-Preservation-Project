@@ -75,14 +75,18 @@ done
 echo "[FWO] Event scripts done."
 
 # -----------------------------------------------------------------------------
-# Auto-heal clan NPC leaders
-# Idempotent restoration of clan.Type and npcattribdyn.IsDead for the 5 clan
-# NPCs. Fixes recruiter-broken state when a player took over and left a clan
-# in Type=0. No-op when state is healthy. Engine spawn-suppression prevents
-# physical respawn when a PC leader is present, so safe in all states.
+# Auto-heal clan NPC leaders  (v2 - clan refactor)
+# Per-clan split-field restore based on whether the clan has PC members:
+#   Empty clan      -> clan.Type = NPC AttribID, npcattribdyn.IsDead = 0  (NPC leads)
+#   Player-occupied -> clan.Type = 0,            npcattribdyn.IsDead = 1  (player leads)
+# v1 forced Type = NPC AttribID for every clan, which kept the recruiter working
+# but broke the Clan Advisor (it requires Type=0) and blocked RANK_LEADER
+# promotion on takeover. The recruiter is now patched (script 75024) to enroll
+# members at Type=0, so player-led clans correctly stay at Type=0.
+# Idempotent; no-op when state is already healthy.
 # -----------------------------------------------------------------------------
 echo "[FWO] Running clan auto-heal..."
-mysql -h fwo-db -u root -pejair0xx < /FWO13/database/auto_heal_clans.sql 2>&1 | grep -v "Using a password" || true
+mysql -h fwo-db -u root -pejair0xx < /FWO13/database/auto_heal_clans_v2.sql 2>&1 | grep -v "Using a password" || true
 echo "[FWO] Clan auto-heal done."
 
 # -----------------------------------------------------------------------------
