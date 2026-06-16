@@ -149,39 +149,3 @@ Ensure WSL2 is enabled, Hyper-V is enabled, and your Windows version is 10 build
 ## License & Distribution
 
 This is a non-commercial preservation project. The original Fung Wan Online IP and Storm Riders franchise belong to their respective owners. Server binaries are redistributed under the assumption that the original game is no longer commercially available and no rights holder is enforcing distribution.
-
-
-## Known Issues & Temporary Fixes
-
-### Clan Recruiter and `/cl` commands stop working on a clan you've taken over
-
-**Status:** Temporary workaround — a permanent script-level fix is planned for the next patch.
-
-**Symptom:** After you take over a clan by killing its NPC leader, the starter-village Clan Recruiter's **Join** option does nothing (no message, no enrollment) for that clan, and `/cl list` / `/cl info` for it stop responding. Other clans are unaffected, and the clan behaves normally before the takeover.
-
-**Cause:** The original FWO database ships with leftover guild-roster rows stored at an invalid member rank (0). They sit harmlessly while a clan is NPC-led, but once a clan becomes player-led (after a takeover) the clan-roster code trips over the invalid rank and the script aborts silently.
-
-**Fix (run once, with your server running):** This removes the invalid leftover rows. Nothing in the game recreates them, so it's a one-time fix — it will simply be superseded by the next patch, which makes those rows harmless without deleting them.
-
-Optional but recommended — back up the affected tables first:
-
-```bat
-docker exec fwo-db mysqldump -uroot -pejair0xx --add-drop-table fwworlddevdb guildlist_0 guildlist_1 guildlist_2 guildlist_3 guildlist_4 guildlist_5 guildlist_6 guildlist_7 guildlist_8 guildlist_9 > guildlist_backup.sql
-```
-
-Apply the fix and restart the server:
-
-```bat
-docker exec fwo-db mysql -uroot -pejair0xx fwworlddevdb -e "DELETE FROM guildlist_0 WHERE CharID<>0 AND Status=0; DELETE FROM guildlist_1 WHERE CharID<>0 AND Status=0; DELETE FROM guildlist_2 WHERE CharID<>0 AND Status=0; DELETE FROM guildlist_3 WHERE CharID<>0 AND Status=0; DELETE FROM guildlist_4 WHERE CharID<>0 AND Status=0; DELETE FROM guildlist_5 WHERE CharID<>0 AND Status=0; DELETE FROM guildlist_6 WHERE CharID<>0 AND Status=0; DELETE FROM guildlist_7 WHERE CharID<>0 AND Status=0; DELETE FROM guildlist_8 WHERE CharID<>0 AND Status=0; DELETE FROM guildlist_9 WHERE CharID<>0 AND Status=0;"
-docker-compose restart fwo-server
-```
-
-**Verify:** `/cl list` and `/cl info` on the taken-over clan should respond again. (Your takeover character is the clan's *leader*, so the recruiter will correctly refuse to let it "join" again — test enrollment with a different character.)
-
-**Undo (if needed):** restore the backup and restart:
-
-```bat
-docker exec -i fwo-db mysql -uroot -pejair0xx fwworlddevdb < guildlist_backup.sql
-docker-compose restart fwo-server
-```
-
